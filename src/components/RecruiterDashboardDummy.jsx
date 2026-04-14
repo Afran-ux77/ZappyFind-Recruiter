@@ -67,6 +67,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import HowToRegOutlinedIcon from "@mui/icons-material/HowToRegOutlined";
 import StarOutlineRoundedIcon from "@mui/icons-material/StarOutlineRounded";
@@ -211,7 +212,7 @@ const SAMPLE_JOBS = [
     posted: "2 months ago",
     closedAt: "1 week ago",
     closedBy: "Alex Chen",
-    closedOn: "3 Apr 2026, 09:12",
+    closedOn: "29th Mar 2026",
     appliedToday: 0, appliedThisWeek: 0, newMatchesThisWeek: 0, responseRate: 58, avgDaysToHire: 34, pipelineHealth: "closed", topSource: "Referral", contacted: 22, interviewing: 5, shortlisted: 7,
   },
   { id: 10, title: "Senior Data Engineer", dept: "Engineering", location: "Remote", status: "draft", matches: 0, posted: "" },
@@ -940,7 +941,8 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
   const [rowActionsAnchor, setRowActionsAnchor] = useState(null);
   const [rowBulkDownloadSelected, setRowBulkDownloadSelected] = useState(false);
 
-  const handleCardClick = () => {
+  const handleCardClick = (e) => {
+    if (e.target.closest(".job-row-actions")) return;
     if (hasMatches && onViewCandidates) onViewCandidates(job);
   };
 
@@ -983,34 +985,36 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
 
         {/* Title + quick metrics */}
         <Box sx={{ minWidth: 0, flex: "1 1 0%" }}>
-          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{
-                fontSize: "0.9375rem",
-                fontWeight: 700,
-                color: SHELL_INK,
-                letterSpacing: "-0.015em",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-              }}
-            >
-              {job.title}
-            </Typography>
-            <Typography
-              sx={{
-                flexShrink: 0,
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                letterSpacing: "0.03em",
-                textTransform: "uppercase",
-                color: "rgba(23,18,14,0.46)",
-                lineHeight: 1.2,
-              }}
-            >
-              {`ZF-${String(job.id).padStart(3, "0")}`}
-            </Typography>
+          <Stack spacing={0.45} sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  fontSize: "0.9375rem",
+                  fontWeight: 700,
+                  color: SHELL_INK,
+                  letterSpacing: "-0.015em",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                }}
+              >
+                {job.title}
+              </Typography>
+              <Typography
+                sx={{
+                  flexShrink: 0,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.03em",
+                  textTransform: "uppercase",
+                  color: "rgba(23,18,14,0.46)",
+                  lineHeight: 1.2,
+                }}
+              >
+                {`ZF-${String(job.id).padStart(3, "0")}`}
+              </Typography>
+            </Stack>
             {!isDraft && (
               <Stack
                 className="job-row-data"
@@ -1019,7 +1023,7 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
                 alignItems="center"
                 flexWrap="wrap"
                 useFlexGap
-                sx={{ pl: 0.35 }}
+                sx={{ pl: 0 }}
               >
                 {[
                   {
@@ -1114,6 +1118,25 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
               {job.location}
             </Typography>
           </Stack>
+          {isClosed && (
+            <>
+              <Box component="span" aria-hidden sx={{ width: 3, height: 3, borderRadius: "50%", bgcolor: "rgba(107,99,92,0.32)", flexShrink: 0 }} />
+              <Tooltip
+                title={<JobClosedDetailsTooltip job={job} />}
+                arrow
+                placement="top"
+                enterDelay={200}
+                slotProps={{ tooltip: { sx: { maxWidth: 280 } } }}
+              >
+                <Stack direction="row" spacing={0.45} alignItems="center" sx={{ cursor: "help" }}>
+                  <TaskAltRoundedIcon sx={{ fontSize: 14, color: "#64748b" }} />
+                  <Typography sx={{ fontSize: "13px", color: SHELL_MUTED, fontWeight: 500, whiteSpace: "nowrap", lineHeight: 1.2 }}>
+                    {`Closed on ${job.closedOn ?? "29th Mar 2026"}`}
+                  </Typography>
+                </Stack>
+              </Tooltip>
+            </>
+          )}
         </Stack>
 
         {/* Actions */}
@@ -1182,29 +1205,37 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
               >
                 View Candidates
               </Button>
-              <Tooltip title="More options" arrow>
-                <IconButton
-                  size="small"
-                  aria-label="More options"
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(rowActionsAnchor)}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
+              <IconButton
+                size="small"
+                aria-label="More options"
+                aria-haspopup="true"
+                aria-controls={rowActionsAnchor ? `job-row-menu-${job.id}` : undefined}
+                aria-expanded={Boolean(rowActionsAnchor)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Open in the next tick to avoid click-away race with row-level handlers.
+                  window.setTimeout(() => {
                     setRowActionsAnchor(e.currentTarget);
-                  }}
-                  sx={{ color: SHELL_MUTED, "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.04)" } }}
-                >
-                  <MoreHorizOutlinedIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
+                  }, 0);
+                }}
+                sx={{ color: SHELL_MUTED, "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.04)" } }}
+              >
+                <MoreHorizOutlinedIcon sx={{ fontSize: 16 }} />
+              </IconButton>
               <Menu
+                id={`job-row-menu-${job.id}`}
                 anchorEl={rowActionsAnchor}
                 open={Boolean(rowActionsAnchor)}
                 onClose={() => setRowActionsAnchor(null)}
+                keepMounted
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
                 slotProps={{
+                  root: {
+                    sx: {
+                      zIndex: 1800,
+                    },
+                  },
                   paper: {
                     sx: {
                       mt: 0.5,
@@ -1212,28 +1243,11 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
                       borderRadius: "12px",
                       border: "1px solid rgba(200,188,174,0.55)",
                       boxShadow: "0 10px 40px rgba(29,26,23,0.12)",
+                      zIndex: 1801,
                     },
                   },
                 }}
               >
-                <MenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRowActionsAnchor(null);
-                  }}
-                  sx={{ fontSize: "0.875rem", fontWeight: 600 }}
-                >
-                  Edit job
-                </MenuItem>
-                <MenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRowActionsAnchor(null);
-                  }}
-                  sx={{ fontSize: "0.875rem", fontWeight: 600 }}
-                >
-                  Share job link
-                </MenuItem>
                 <MenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1242,16 +1256,25 @@ function JobRowCard({ job, onCreateJob, onViewCandidates }) {
                   }}
                   sx={{ fontSize: "0.875rem", fontWeight: 600 }}
                 >
-                  {rowBulkDownloadSelected ? "✓ Bulk download candidates" : "Bulk download candidates"}
+                  {rowBulkDownloadSelected ? "✓ Download bulk candidates" : "Download bulk candidates"}
                 </MenuItem>
                 <MenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     setRowActionsAnchor(null);
                   }}
-                  sx={{ fontSize: "0.875rem", fontWeight: 600, color: isClosed ? "#16a34a" : "#b45309" }}
+                  sx={{ fontSize: "0.875rem", fontWeight: 600 }}
                 >
-                  {isClosed ? "Reopen job" : "Close job"}
+                  Unpublish job
+                </MenuItem>
+                <MenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRowActionsAnchor(null);
+                  }}
+                  sx={{ fontSize: "0.875rem", fontWeight: 700, color: "#dc2626" }}
+                >
+                  Close job
                 </MenuItem>
               </Menu>
             </>
@@ -3036,11 +3059,7 @@ function CandidateDetailDialog({
               <Box sx={{ position: "relative" }}>
                 <Box
                   sx={{
-                    filter: isDisplayedLocked ? "blur(6px)" : "none",
-                    opacity: isDisplayedLocked ? 0.6 : 1,
-                    pointerEvents: isDisplayedLocked ? "none" : "auto",
-                    userSelect: isDisplayedLocked ? "none" : "auto",
-                    transition: "filter 0.2s ease, opacity 0.2s ease",
+                    transition: "opacity 0.2s ease",
                   }}
                 >
                   <AiMatchInsightPanel
@@ -3050,7 +3069,16 @@ function CandidateDetailDialog({
                     showTopStrengths={false}
                   />
 
-                  <Box sx={{ mb: 2.5 }}>
+                  <Box sx={{ mb: 2.5, position: "relative" }}>
+                    <Box
+                      sx={{
+                        filter: isDisplayedLocked ? "blur(6px)" : "none",
+                        opacity: isDisplayedLocked ? 0.6 : 1,
+                        pointerEvents: isDisplayedLocked ? "none" : "auto",
+                        userSelect: isDisplayedLocked ? "none" : "auto",
+                        transition: "filter 0.2s ease, opacity 0.2s ease",
+                      }}
+                    >
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2.25} sx={{ alignItems: "stretch" }}>
                     <Box
                       sx={{
@@ -3221,6 +3249,9 @@ function CandidateDetailDialog({
                       bgcolor: "#ffffff",
                       boxShadow: "0 4px 22px rgba(23,18,14,0.045)",
                       overflow: "hidden",
+                      filter: isDisplayedLocked ? "blur(10px)" : "none",
+                      opacity: isDisplayedLocked ? 0.45 : 1,
+                      transition: "filter 0.2s ease, opacity 0.2s ease",
                     }}
                   >
                   <Box sx={{ px: 2.25, pt: 2.25, pb: 1.75 }}>
@@ -3526,85 +3557,87 @@ function CandidateDetailDialog({
                       </Stack>
                       </Box>
                     )}
-                  </Box>
-                </Box>
-                {isDisplayedLocked && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      inset: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      p: 2,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        maxWidth: 440,
-                        width: "100%",
-                        textAlign: "center",
-                        borderRadius: "18px",
-                        border: "1px solid rgba(248,114,58,0.2)",
-                        background: "linear-gradient(168deg, rgba(255,255,255,0.97) 0%, rgba(255,250,246,0.96) 45%, rgba(255,255,255,0.98) 100%)",
-                        boxShadow: "0 18px 44px rgba(23,18,14,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
-                        px: 2.5,
-                        py: 2.25,
-                        position: "relative",
-                        overflow: "hidden",
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          top: 0,
-                          left: "18%",
-                          right: "18%",
-                          height: 2,
-                          borderRadius: "0 0 12px 12px",
-                          background: "linear-gradient(90deg, rgba(248,114,58,0) 0%, rgba(248,114,58,0.42) 50%, rgba(248,114,58,0) 100%)",
-                        },
-                      }}
-                    >
-                      <Stack direction="row" justifyContent="center" alignItems="center" spacing={1} sx={{ mb: 1.2 }}>
-                        <Box
-                          sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: "14px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "linear-gradient(150deg, rgba(248,114,58,0.2) 0%, rgba(248,114,58,0.06) 100%)",
-                            border: "1px solid rgba(248,114,58,0.24)",
-                          }}
-                        >
-                          <LockOutlinedIcon sx={{ fontSize: 22, color: SHELL_PRIMARY }} />
-                        </Box>
-                      </Stack>
-                      <Typography sx={{ fontSize: "0.96rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.02em", mb: 0.55 }}>
-                        Unlock to view candidate details
-                      </Typography>
-                      <Typography sx={{ fontSize: "0.8rem", fontWeight: 500, color: SHELL_MUTED, lineHeight: 1.55, mb: 1.5, maxWidth: 360, mx: "auto" }}>
-                        Contact details, strengths, competency fit analysis, and missing must-have gaps are available after unlocking this candidate.
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        onClick={() => onUnlockCandidate(displayedCandidate.id)}
+                    </Box>
+                    {isDisplayedLocked && (
+                      <Box
                         sx={{
-                          textTransform: "none",
-                          fontWeight: 700,
-                          borderRadius: "11px",
-                          px: 2.15,
-                          py: 0.72,
-                          bgcolor: SHELL_PRIMARY,
-                          boxShadow: "0 8px 20px rgba(248,114,58,0.22)",
-                          "&:hover": { bgcolor: "#e66a33", boxShadow: "0 10px 24px rgba(248,114,58,0.28)" },
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          px: 2,
+                          zIndex: 2,
                         }}
                       >
-                        Unlock Candidate
-                      </Button>
-                    </Box>
+                        <Box
+                          sx={{
+                            maxWidth: 440,
+                            width: "100%",
+                            textAlign: "center",
+                            borderRadius: "18px",
+                            border: "1px solid rgba(248,114,58,0.2)",
+                            background: "linear-gradient(168deg, rgba(255,255,255,0.97) 0%, rgba(255,250,246,0.96) 45%, rgba(255,255,255,0.98) 100%)",
+                            boxShadow: "0 18px 44px rgba(23,18,14,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+                            px: 2.5,
+                            py: 2.25,
+                            position: "relative",
+                            overflow: "hidden",
+                            "&::before": {
+                              content: '""',
+                              position: "absolute",
+                              top: 0,
+                              left: "18%",
+                              right: "18%",
+                              height: 2,
+                              borderRadius: "0 0 12px 12px",
+                              background: "linear-gradient(90deg, rgba(248,114,58,0) 0%, rgba(248,114,58,0.42) 50%, rgba(248,114,58,0) 100%)",
+                            },
+                          }}
+                        >
+                          <Stack direction="row" justifyContent="center" alignItems="center" spacing={1} sx={{ mb: 1.2 }}>
+                            <Box
+                              sx={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: "14px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "linear-gradient(150deg, rgba(248,114,58,0.2) 0%, rgba(248,114,58,0.06) 100%)",
+                                border: "1px solid rgba(248,114,58,0.24)",
+                              }}
+                            >
+                              <LockOutlinedIcon sx={{ fontSize: 22, color: SHELL_PRIMARY }} />
+                            </Box>
+                          </Stack>
+                          <Typography sx={{ fontSize: "0.96rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.02em", mb: 0.55 }}>
+                            Unlock to view candidate details
+                          </Typography>
+                          <Typography sx={{ fontSize: "0.8rem", fontWeight: 500, color: SHELL_MUTED, lineHeight: 1.55, mb: 1.5, maxWidth: 360, mx: "auto" }}>
+                            Contact details, strengths, competency fit analysis, and missing must-have gaps are available after unlocking this candidate.
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            onClick={() => onUnlockCandidate(displayedCandidate.id)}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 700,
+                              borderRadius: "11px",
+                              px: 2.15,
+                              py: 0.72,
+                              bgcolor: SHELL_PRIMARY,
+                              boxShadow: "0 8px 20px rgba(248,114,58,0.22)",
+                              "&:hover": { bgcolor: "#e66a33", boxShadow: "0 10px 24px rgba(248,114,58,0.28)" },
+                            }}
+                          >
+                            Unlock Candidate
+                          </Button>
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
-                )}
+                </Box>
               </Box>
             )}
 
@@ -5668,7 +5701,6 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
     return Math.max(36, Math.ceil((maxVal + 6) / 9) * 9);
   }, [matchesTrendData]);
 
-  const qualityColors = { High: "#16a34a", Medium: "#b45309", Low: "#64748b" };
   const neutralRule = "1px solid rgba(230,222,212,0.95)";
   /** Unlock column: simple left-to-right orange fill (matches shell primary). */
   const unlockBarPremium = `linear-gradient(90deg, #FDC9A0 0%, ${SHELL_PRIMARY} 100%)`;
@@ -6198,7 +6230,7 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
               >
                 <Typography
                   sx={{
-                    flex: "1.55 1 0",
+                    flex: "0.9 1 0",
                     minWidth: 0,
                     textAlign: "left",
                     fontSize: "0.58rem",
@@ -6216,12 +6248,9 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
               <Typography sx={{ flex: "1.45 1 0", fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(23,18,14,0.4)", lineHeight: 1.25 }}>
                 Unlocked / matches
               </Typography>
-              <Typography sx={{ flex: "0.78 1 0", fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(23,18,14,0.4)", textAlign: "left", lineHeight: 1.25 }}>
-                Quality
-              </Typography>
               <Typography
                 sx={{
-                  flex: "1.05 1 0",
+                  flex: "1.83 1 0",
                   fontSize: "0.65rem",
                   fontWeight: 800,
                   letterSpacing: "0.1em",
@@ -6229,6 +6258,8 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
                   color: "rgba(23,18,14,0.4)",
                   textAlign: "left",
                   pl: "26px",
+                  whiteSpace: "nowrap",
+                  wordBreak: "keep-all",
                 }}
               >
                 Ideal Candidate Profile
@@ -6305,7 +6336,7 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
                       }}
                     />
                   </Box>
-                  <Box sx={{ flex: "1.55 1 0", display: "flex", justifyContent: "flex-start" }}>
+                  <Box sx={{ flex: "0.9 1 0", display: "flex", justifyContent: "flex-start" }}>
                     {fresh > 0 ? (
                       <Tooltip
                         title="Candidates newly matched to this job in the last rolling 24 hours."
@@ -6347,7 +6378,7 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
                       sx={{
                         flex: "0 1 auto",
                         width: "100%",
-                        maxWidth: 140,
+                        maxWidth: 200,
                         height: 11,
                         borderRadius: "18px",
                         bgcolor: "rgba(250,248,245,0.98)",
@@ -6374,7 +6405,7 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
                         fontSize: "0.72rem",
                         fontWeight: 700,
                         color: SHELL_MUTED,
-                        minWidth: 52,
+                        minWidth: 82,
                         fontVariantNumeric: "tabular-nums",
                         letterSpacing: "-0.02em",
                         lineHeight: 1.2,
@@ -6390,27 +6421,7 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
                       {j.matches}
                     </Box>
                   </Box>
-                  <Box sx={{ flex: "0.78 1 0", display: "flex", justifyContent: "flex-start" }}>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={0.5}
-                      sx={{
-                        px: 1,
-                        py: 0.35,
-                        borderRadius: "999px",
-                        bgcolor: "rgba(248,246,242,0.95)",
-                        border: neutralRule,
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "rgba(23,18,14,0.22)", flexShrink: 0 }} />
-                      <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color: qualityColors[j.quality] || SHELL_MUTED, letterSpacing: "0.02em" }}>
-                        {j.quality}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                  <Box sx={{ flex: "1.05 1 0", display: "flex", justifyContent: "flex-start", width: "100%", minWidth: 0 }}>
+                  <Box sx={{ flex: "1.83 1 0", display: "flex", justifyContent: "flex-start", width: "100%", minWidth: 0 }}>
                     <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0, width: "100%", justifyContent: "flex-start" }}>
                       <Box sx={{ width: 22, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
                         <IcpStatusIcon sx={{ fontSize: 18, color: SHELL_MUTED }} />
@@ -6788,7 +6799,17 @@ function TeamTabContent({ autoOpenInvite = false, onAutoOpenInviteHandled }) {
               </Stack>
             </Box>
             <Box sx={{ pt: "18px", pb: "18px", px: 2.25, borderTop: "1px solid rgba(233,227,220,0.8)", borderBottom: "1px solid rgba(233,227,220,0.8)" }}>
-              <Stack spacing={1.55} sx={{ mt: 0.35, pb: 1.4, gap: "8px" }}>
+              <Stack
+                spacing={1.55}
+                sx={{
+                  mt: 0.35,
+                  pb: 1.4,
+                  gap: "8px",
+                  "& .MuiOutlinedInput-input": {
+                    fontSize: "14px",
+                  },
+                }}
+              >
             <TextField
               label="Full Name"
               required

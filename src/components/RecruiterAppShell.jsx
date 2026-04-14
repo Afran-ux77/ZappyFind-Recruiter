@@ -285,8 +285,8 @@ export default function RecruiterAppShell({ activeNav, onNav, onSignOut, onLogoC
             px: 1.25,
             py: 1.15,
             borderRadius: "12px",
-            backgroundColor: "#FAF8F4",
-            border: "1px solid rgba(220, 212, 202, 0.55)",
+            backgroundColor: "transparent",
+            border: "none",
           }}
         >
           <Stack direction="row" spacing={1.1} alignItems="center" sx={{ mb: 1 }}>

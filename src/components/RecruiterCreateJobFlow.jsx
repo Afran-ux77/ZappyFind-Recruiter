@@ -1830,7 +1830,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       fontSize: "0.8125rem",
                       letterSpacing: "-0.01em",
                       color: SHELL_MUTED,
-                      bgcolor: "transparent",
+                      bgcolor: "#fff",
                       py: 0.65,
                       px: 1.25,
                       transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
@@ -3774,7 +3774,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     </Typography>
                   </Box>
                   <Button
-                    variant="text"
+                    variant="outlined"
                     startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important", color: SHELL_PRIMARY }} />}
                     onClick={() => {
                       setSendHmLeavingStacked(false);
@@ -3789,13 +3789,13 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       px: 2.25,
                       py: 0.95,
                       color: SHELL_PRIMARY,
-                      bgcolor: "rgba(248,114,58,0.08)",
-                      border: "none",
+                      bgcolor: "#fff !important",
+                      border: "1px solid rgba(248,114,58,0.55) !important",
                       boxShadow: "none",
                       whiteSpace: "nowrap",
                       "&:hover": {
-                        bgcolor: "rgba(248,114,58,0.14)",
-                        border: "none",
+                        bgcolor: "#fff !important",
+                        border: "1px solid rgba(248,114,58,0.75) !important",
                         boxShadow: "none",
                       },
                     }}
@@ -4124,7 +4124,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                 {/* Actions */}
                 <Stack direction={{ xs: "column-reverse", sm: "row" }} spacing={1.25} justifyContent="flex-end">
                   <Button
-                    variant="text"
+                    variant="outlined"
                     onClick={() => { setSkipHmDialogOpen(false); setPhase("review"); }}
                     sx={{
                       textTransform: "none",
@@ -4138,7 +4138,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     Skip and continue to review
                   </Button>
                   <Button
-                    variant="contained"
+                    variant="text"
                     startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important" }} />}
                     onClick={() => {
                       setSendHmLeavingStacked(false);
@@ -4151,8 +4151,15 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       fontSize: "0.875rem",
                       px: 2.5,
                       py: 1,
-                      boxShadow: "0 8px 20px rgba(248,114,58,0.22)",
-                      "&:hover": { boxShadow: "0 10px 24px rgba(248,114,58,0.28)" },
+                      color: SHELL_PRIMARY,
+                      border: "1px solid rgba(248,114,58,0.55) !important",
+                      bgcolor: "#fff !important",
+                      boxShadow: "none",
+                      "&:hover": {
+                        border: "1px solid rgba(248,114,58,0.75) !important",
+                        bgcolor: "#fff !important",
+                        boxShadow: "none",
+                      },
                     }}
                   >
                     Send to hiring manager
