@@ -2933,6 +2933,9 @@ function CandidateDetailDialog({
             pb: 0,
             bgcolor: "#ffffff",
             borderBottom: "1px solid rgba(220,212,202,0.45)",
+            position: "relative",
+            zIndex: 3,
+            pointerEvents: "auto",
           }}
         >
           <Tabs
@@ -2961,6 +2964,12 @@ function CandidateDetailDialog({
           >
             <Tab
               disableRipple
+              value={0}
+              onMouseDownCapture={() => setDetailTab(0)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetailTab(0);
+              }}
               iconPosition="start"
               icon={
                 detailTab === 0 ? (
@@ -2971,50 +2980,42 @@ function CandidateDetailDialog({
               }
               label="AI Insights"
             />
-            <Tooltip
-              title="Unlock candidate to view these details"
-              arrow
-              placement="top"
-              disableHoverListener={!isDisplayedLocked}
-            >
-              <span>
-                <Tab
-                  disableRipple
-                  disabled={isDisplayedLocked}
-                  iconPosition="start"
-                  icon={
-                    detailTab === 1 ? (
-                      <GraphicEqRoundedIcon sx={{ fontSize: 20, color: SHELL_PRIMARY }} aria-hidden />
-                    ) : (
-                      <GraphicEqOutlinedIcon sx={{ fontSize: 20, color: SHELL_MUTED }} aria-hidden />
-                    )
-                  }
-                  label="ZappyFind interview"
-                />
-              </span>
-            </Tooltip>
-            <Tooltip
-              title="Unlock candidate to view these details"
-              arrow
-              placement="top"
-              disableHoverListener={!isDisplayedLocked}
-            >
-              <span>
-                <Tab
-                  disableRipple
-                  disabled={isDisplayedLocked}
-                  iconPosition="start"
-                  icon={
-                    detailTab === 2 ? (
-                      <PersonRoundedIcon sx={{ fontSize: 20, color: SHELL_PRIMARY }} aria-hidden />
-                    ) : (
-                      <PersonOutlineRoundedIcon sx={{ fontSize: 20, color: SHELL_MUTED }} aria-hidden />
-                    )
-                  }
-                  label="Profile"
-                />
-              </span>
-            </Tooltip>
+            <Tab
+              disableRipple
+              value={1}
+              onMouseDownCapture={() => setDetailTab(1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetailTab(1);
+              }}
+              iconPosition="start"
+              icon={
+                detailTab === 1 ? (
+                  <GraphicEqRoundedIcon sx={{ fontSize: 20, color: SHELL_PRIMARY }} aria-hidden />
+                ) : (
+                  <GraphicEqOutlinedIcon sx={{ fontSize: 20, color: SHELL_MUTED }} aria-hidden />
+                )
+              }
+              label="ZappyFind interview"
+            />
+            <Tab
+              disableRipple
+              value={2}
+              onMouseDownCapture={() => setDetailTab(2)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetailTab(2);
+              }}
+              iconPosition="start"
+              icon={
+                detailTab === 2 ? (
+                  <PersonRoundedIcon sx={{ fontSize: 20, color: SHELL_PRIMARY }} aria-hidden />
+                ) : (
+                  <PersonOutlineRoundedIcon sx={{ fontSize: 20, color: SHELL_MUTED }} aria-hidden />
+                )
+              }
+              label="Profile"
+            />
           </Tabs>
         </Box>
 
@@ -3027,6 +3028,7 @@ function CandidateDetailDialog({
             px: 3,
             py: 2.5,
             position: "relative",
+            zIndex: 1,
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
           }}
@@ -3069,7 +3071,7 @@ function CandidateDetailDialog({
                     showTopStrengths={false}
                   />
 
-                  <Box sx={{ mb: 2.5, position: "relative" }}>
+                  <Box sx={{ mb: 0, position: "relative" }}>
                     <Box
                       sx={{
                         filter: isDisplayedLocked ? "blur(6px)" : "none",
@@ -3243,6 +3245,7 @@ function CandidateDetailDialog({
 
                   <Box
                     sx={{
+                      mt: "20px",
                       mb: 2.5,
                       borderRadius: "16px",
                       border: "1px solid rgba(23,18,14,0.07)",
@@ -5853,6 +5856,9 @@ function HomeTabContent({ onCreateJob, onOpenJobs, onOpenTeamInvite }) {
               width: 260,
               height: 140,
               ml: 3,
+              "& svg": {
+                opacity: 0.7,
+              },
             }}
           >
             <svg width="260" height="140" viewBox="0 0 260 140" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
