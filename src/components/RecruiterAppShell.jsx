@@ -56,7 +56,7 @@ const profileData = {
   phone: "+1 (347) 555-2874",
 };
 
-function SidebarNav({ activeNav, onNav }) {
+function SidebarNav({ activeNav, onNav, onLogoClick }) {
   return (
     <Stack
       sx={{
@@ -66,7 +66,10 @@ function SidebarNav({ activeNav, onNav }) {
         px: 1.75,
       }}
     >
-      <Box sx={{ mb: 2.5 }}>
+      <Box
+        sx={{ mb: 2.5, cursor: onLogoClick ? "pointer" : "default" }}
+        onClick={onLogoClick}
+      >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.25 }}>
           <Box
             sx={{
@@ -129,7 +132,7 @@ function SidebarNav({ activeNav, onNav }) {
 /**
  * Shared recruiter workspace chrome: sidebar, mobile drawer, top bar, scrollable main region.
  */
-export default function RecruiterAppShell({ activeNav, onNav, onSignOut, children, mainScrollPt = 3.5 }) {
+export default function RecruiterAppShell({ activeNav, onNav, onSignOut, onLogoClick, children, mainScrollPt = 3.5 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const isMdUp = useMediaQuery("(min-width:900px)");
@@ -266,43 +269,84 @@ export default function RecruiterAppShell({ activeNav, onNav, onSignOut, childre
         PaperProps={{
           sx: {
             mt: 1,
-            minWidth: 280,
-            borderRadius: "14px",
-            border: "1px solid rgba(220, 212, 202, 0.7)",
-            boxShadow: "0 14px 30px rgba(23, 18, 14, 0.11)",
-            p: 0.5,
+            minWidth: 296,
+            borderRadius: "16px",
+            border: "1px solid rgba(220, 212, 202, 0.62)",
+            boxShadow: "0 16px 34px rgba(23, 18, 14, 0.1)",
+            p: 0.75,
             overflow: "hidden",
             zIndex: 1700,
+            bgcolor: "#fff",
           },
         }}
       >
-        <Box sx={{ px: 1.25, py: 1 }}>
-          <Typography sx={{ fontSize: "0.875rem", fontWeight: 700, color: SHELL_INK }}>
-            {profileData.name}
-          </Typography>
-          <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.2 }}>
-            {profileData.jobTitle}
-          </Typography>
-          <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 1 }}>
-            {profileData.email}
-          </Typography>
-          <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.35 }}>
-            {profileData.phone}
-          </Typography>
+        <Box
+          sx={{
+            px: 1.25,
+            py: 1.15,
+            borderRadius: "12px",
+            backgroundColor: "#FAF8F4",
+            border: "1px solid rgba(220, 212, 202, 0.55)",
+          }}
+        >
+          <Stack direction="row" spacing={1.1} alignItems="center" sx={{ mb: 1 }}>
+            <Box
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                bgcolor: "rgba(248, 114, 58, 0.14)",
+                color: "#C4511A",
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                flexShrink: 0,
+              }}
+            >
+              A
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.25 }}>
+                {profileData.name}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.2 }}>
+                {profileData.jobTitle}
+              </Typography>
+            </Box>
+          </Stack>
+          <Box sx={{ mt: 0.2 }}>
+            <Typography sx={{ fontSize: "0.6875rem", color: SHELL_MUTED, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Email
+            </Typography>
+            <Typography sx={{ fontSize: "0.8125rem", color: SHELL_INK, fontWeight: 600, mt: 0.2 }}>
+              {profileData.email}
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 0.9 }}>
+            <Typography sx={{ fontSize: "0.6875rem", color: SHELL_MUTED, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Phone
+            </Typography>
+            <Typography sx={{ fontSize: "0.8125rem", color: SHELL_INK, fontWeight: 600, mt: 0.2 }}>
+              {profileData.phone}
+            </Typography>
+          </Box>
         </Box>
-        <Divider sx={{ borderColor: "rgba(220, 212, 202, 0.65)", my: 0.5 }} />
+        <Divider sx={{ borderColor: "rgba(220, 212, 202, 0.62)", my: 0.75 }} />
         <MenuItem
           onClick={() => {
             setProfileAnchorEl(null);
             onSignOut();
           }}
           sx={{
-            borderRadius: "10px",
+            borderRadius: "11px",
             mx: 0.5,
             mb: 0.25,
             fontSize: "0.8125rem",
-            fontWeight: 600,
+            fontWeight: 700,
             color: SHELL_INK,
+            bgcolor: "transparent",
+            "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
           }}
         >
           Log out
@@ -335,7 +379,7 @@ export default function RecruiterAppShell({ activeNav, onNav, onSignOut, childre
           flexDirection: "column",
         }}
       >
-        <SidebarNav activeNav={activeNav} onNav={onNav} />
+        <SidebarNav activeNav={activeNav} onNav={onNav} onLogoClick={onLogoClick} />
       </Box>
 
       <Drawer
@@ -348,6 +392,7 @@ export default function RecruiterAppShell({ activeNav, onNav, onSignOut, childre
       >
         <SidebarNav
           activeNav={activeNav}
+          onLogoClick={() => { if (onLogoClick) { onLogoClick(); closeDrawer(); } }}
           onNav={(id) => {
             onNav(id);
             closeDrawer();

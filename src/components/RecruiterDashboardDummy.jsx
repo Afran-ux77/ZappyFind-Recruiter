@@ -6917,10 +6917,616 @@ function TeamTabContent({ autoOpenInvite = false, onAutoOpenInviteHandled }) {
   );
 }
 
+/* ───── Empty-state home (fresh sign-up, no jobs yet) ───── */
+
+const emptyOrbFloat = {
+  hidden: { opacity: 0, scale: 0.7 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const emptyOrbBreath = {
+  animate: {
+    scale: [1, 1.08, 1],
+    opacity: [0.55, 0.8, 0.55],
+    transition: { duration: 5, ease: "easeInOut", repeat: Infinity },
+  },
+};
+
+const emptyFadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.22 + i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+const emptyScaleIn = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: (i) => ({
+    opacity: 1,
+    scale: 1,
+    transition: { delay: 0.3 + i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+const EMPTY_ACTIONS = [
+  {
+    icon: AddOutlinedIcon,
+    title: "Create your first job",
+    desc: "Describe the role and let AI find the best-fit candidates for you.",
+    accent: SHELL_PRIMARY,
+    accentBg: "linear-gradient(135deg, rgba(248,114,58,0.18) 0%, rgba(248,114,58,0.06) 100%)",
+    glowColor: "rgba(248, 114, 58, 0.12)",
+    action: "create",
+    primary: true,
+  },
+  {
+    icon: GroupsOutlinedIcon,
+    title: "Invite your team",
+    desc: "Collaborate with your hiring team to review and shortlist candidates together.",
+    accent: "#3B82F6",
+    accentBg: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.04) 100%)",
+    glowColor: "rgba(59, 130, 246, 0.1)",
+    action: "team",
+    primary: false,
+  },
+  {
+    icon: SettingsOutlinedIcon,
+    title: "Set up your company profile",
+    desc: "Add your brand, industry, and preferences so job posts look polished.",
+    accent: "#8B5CF6",
+    accentBg: "linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.04) 100%)",
+    glowColor: "rgba(139, 92, 246, 0.1)",
+    action: "settings",
+    primary: false,
+  },
+];
+
+const CHECKLIST = [
+  { label: "Create a job posting", num: "01" },
+  { label: "Review AI-matched candidates", num: "02" },
+  { label: "Invite a team member", num: "03" },
+  { label: "Set up your company brand", num: "04" },
+];
+
+function EmptyHomeContent({ onCreateJob, onOpenTeamInvite, onOpenSettings }) {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  const runAction = (action) => {
+    if (action === "create" && onCreateJob) onCreateJob();
+    if (action === "team" && onOpenTeamInvite) onOpenTeamInvite();
+    if (action === "settings" && onOpenSettings) onOpenSettings();
+  };
+
+  return (
+    <MotionBox
+      initial="hidden"
+      animate="visible"
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } }}
+      sx={{ position: "relative", maxWidth: 820, mx: "auto", pt: { xs: 0.5, md: 1 } }}
+    >
+      {/* Layered animated background orbs */}
+      <MotionBox
+        variants={emptyOrbFloat}
+        animate={emptyOrbBreath.animate}
+        sx={{
+          position: "absolute",
+          top: "-4%",
+          right: "-8%",
+          width: 380,
+          height: 380,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(248,114,58,0.1) 0%, rgba(248,114,58,0.02) 50%, transparent 72%)",
+          filter: "blur(40px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <MotionBox
+        variants={emptyOrbFloat}
+        animate={{
+          ...emptyOrbBreath.animate,
+          transition: { ...emptyOrbBreath.animate.transition, delay: 1.5 },
+        }}
+        sx={{
+          position: "absolute",
+          top: "35%",
+          left: "-12%",
+          width: 280,
+          height: 280,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 65%)",
+          filter: "blur(35px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <MotionBox
+        variants={emptyOrbFloat}
+        animate={{
+          ...emptyOrbBreath.animate,
+          scale: [1, 1.12, 1],
+          transition: { ...emptyOrbBreath.animate.transition, duration: 6, delay: 0.8 },
+        }}
+        sx={{
+          position: "absolute",
+          bottom: "8%",
+          right: "4%",
+          width: 200,
+          height: 200,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 65%)",
+          filter: "blur(30px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      {/* Hero greeting card */}
+      <MotionBox custom={0} variants={emptyFadeUp} sx={{ position: "relative", zIndex: 1, mb: 3.5 }}>
+        <Box
+          sx={{
+            borderRadius: "26px",
+            p: { xs: 3, sm: 3.5, md: 4 },
+            background: [
+              "linear-gradient(158deg, #FFFEFB 0%, #FEF9F4 32%, #FCF3EC 60%, #FDF6F0 100%)",
+              "linear-gradient(118deg, rgba(248,114,58,0.07) 0%, transparent 42%, rgba(59,130,246,0.04) 78%, transparent 100%)",
+            ].join(", "),
+            border: "1px solid rgba(238,230,218,0.55)",
+            boxShadow: [
+              "0 1px 0 rgba(255,255,255,0.98) inset",
+              "0 -1px 0 rgba(255,255,255,0.4) inset",
+              "0 2px 6px rgba(23,18,14,0.03)",
+              "0 16px 44px rgba(23,18,14,0.06)",
+            ].join(", "),
+            position: "relative",
+            overflow: "hidden",
+            isolation: "isolate",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: -60,
+              right: -40,
+              width: 260,
+              height: 260,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(248,114,58,0.1) 0%, transparent 60%)",
+              pointerEvents: "none",
+              zIndex: 0,
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              bottom: -30,
+              left: "20%",
+              width: 180,
+              height: 180,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 65%)",
+              pointerEvents: "none",
+              zIndex: 0,
+            },
+          }}
+        >
+          <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "center" }} justifyContent="space-between" spacing={3}>
+            <Box sx={{ position: "relative", zIndex: 1, flex: 1, minWidth: 0 }}>
+              <Typography
+                component="h1"
+                sx={{
+                  fontFamily: '"DM Serif Display", Georgia, "Times New Roman", serif',
+                  fontSize: { xs: "28px", sm: "32px", md: "36px" },
+                  fontWeight: 400,
+                  letterSpacing: "-0.03em",
+                  color: SHELL_INK,
+                  lineHeight: 1.12,
+                  mb: 1.5,
+                }}
+              >
+                {greeting}, Alex
+              </Typography>
+              <Typography
+                sx={{
+                  color: SHELL_MUTED,
+                  fontSize: { xs: "0.9rem", sm: "0.95rem" },
+                  lineHeight: 1.7,
+                  maxWidth: 460,
+                }}
+              >
+                Welcome to ZappyFind. Your hiring command center is ready.
+                Create your first job post and let AI do the heavy lifting.
+              </Typography>
+              <Button
+                variant="contained"
+                disableElevation
+                startIcon={<AddOutlinedIcon />}
+                onClick={onCreateJob}
+                sx={{
+                  mt: 3,
+                  py: 1.35,
+                  px: 3,
+                  borderRadius: "14px",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  textTransform: "none",
+                  bgcolor: SHELL_PRIMARY,
+                  color: "#fff",
+                  boxShadow: "0 8px 24px rgba(248,114,58,0.3)",
+                  "&:hover": { bgcolor: "#E5622E", boxShadow: "0 12px 32px rgba(248,114,58,0.38)" },
+                  transition: "background-color 0.2s ease, box-shadow 0.25s ease",
+                }}
+              >
+                Create your first job
+              </Button>
+            </Box>
+
+            {/* Decorative people-network illustration */}
+            <Box sx={{ display: { xs: "none", md: "block" }, flexShrink: 0, position: "relative", zIndex: 1, width: 220, height: 160 }}>
+              <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+                <defs>
+                  <linearGradient id="eNodeOrange" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={SHELL_PRIMARY} stopOpacity="0.28" />
+                    <stop offset="100%" stopColor={SHELL_PRIMARY} stopOpacity="0.08" />
+                  </linearGradient>
+                  <linearGradient id="eNodeBlue" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.24" />
+                    <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.06" />
+                  </linearGradient>
+                  <linearGradient id="eNodeGreen" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#0F9A7A" stopOpacity="0.24" />
+                    <stop offset="100%" stopColor="#0F9A7A" stopOpacity="0.06" />
+                  </linearGradient>
+                  <radialGradient id="eCenterGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={SHELL_PRIMARY} stopOpacity="0.14" />
+                    <stop offset="100%" stopColor={SHELL_PRIMARY} stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+
+                {/* Center glow */}
+                <circle cx="110" cy="80" r="60" fill="url(#eCenterGlow)">
+                  <animate attributeName="r" values="55;65;55" dur="4s" repeatCount="indefinite" />
+                </circle>
+
+                {/* Connection lines (draw in) */}
+                <line x1="110" y1="80" x2="46" y2="40" stroke={SHELL_PRIMARY} strokeOpacity="0.18" strokeWidth="1.5" strokeDasharray="100" strokeDashoffset="100">
+                  <animate attributeName="stroke-dashoffset" values="100;0" dur="0.7s" fill="freeze" begin="0.5s" />
+                </line>
+                <line x1="110" y1="80" x2="174" y2="36" stroke="#3B82F6" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="100" strokeDashoffset="100">
+                  <animate attributeName="stroke-dashoffset" values="100;0" dur="0.7s" fill="freeze" begin="0.65s" />
+                </line>
+                <line x1="110" y1="80" x2="40" y2="118" stroke="#0F9A7A" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="100" strokeDashoffset="100">
+                  <animate attributeName="stroke-dashoffset" values="100;0" dur="0.7s" fill="freeze" begin="0.8s" />
+                </line>
+                <line x1="110" y1="80" x2="178" y2="124" stroke="#8B5CF6" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="100" strokeDashoffset="100">
+                  <animate attributeName="stroke-dashoffset" values="100;0" dur="0.7s" fill="freeze" begin="0.95s" />
+                </line>
+
+                {/* Center node (you) */}
+                <circle cx="110" cy="80" r="22" fill="url(#eNodeOrange)" stroke={SHELL_PRIMARY} strokeOpacity="0.3" strokeWidth="1.5">
+                  <animate attributeName="r" values="0;22" dur="0.5s" fill="freeze" begin="0.3s" calcMode="spline" keySplines="0.22 1 0.36 1" />
+                </circle>
+                <text x="110" y="76" textAnchor="middle" fill={SHELL_PRIMARY} fontWeight="700" fontSize="9" opacity="0">
+                  YOU
+                  <animate attributeName="opacity" values="0;0.7" dur="0.3s" fill="freeze" begin="0.7s" />
+                </text>
+                <text x="110" y="88" textAnchor="middle" fill={SHELL_PRIMARY} fontWeight="600" fontSize="7" opacity="0" letterSpacing="0.5">
+                  HIRE
+                  <animate attributeName="opacity" values="0;0.45" dur="0.3s" fill="freeze" begin="0.8s" />
+                </text>
+
+                {/* Candidate node: top-left */}
+                <circle cx="46" cy="40" r="16" fill="url(#eNodeOrange)" opacity="0">
+                  <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.9s" />
+                  <animate attributeName="r" values="8;16" dur="0.4s" fill="freeze" begin="0.9s" calcMode="spline" keySplines="0.22 1 0.36 1" />
+                </circle>
+                <circle cx="46" cy="36" r="5" fill={SHELL_PRIMARY} fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.25" dur="0.3s" fill="freeze" begin="1.1s" />
+                </circle>
+                <rect x="38" y="44" width="16" height="2" rx="1" fill={SHELL_PRIMARY} fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.2" dur="0.3s" fill="freeze" begin="1.15s" />
+                </rect>
+                {/* Match badge */}
+                <rect x="56" y="28" width="22" height="12" rx="6" fill={SHELL_PRIMARY} fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.9" dur="0.25s" fill="freeze" begin="1.5s" />
+                </rect>
+                <text x="67" y="36.5" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="700" opacity="0">
+                  95%
+                  <animate attributeName="opacity" values="0;1" dur="0.2s" fill="freeze" begin="1.55s" />
+                </text>
+
+                {/* Candidate node: top-right */}
+                <circle cx="174" cy="36" r="16" fill="url(#eNodeBlue)" opacity="0">
+                  <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="1.05s" />
+                  <animate attributeName="r" values="8;16" dur="0.4s" fill="freeze" begin="1.05s" calcMode="spline" keySplines="0.22 1 0.36 1" />
+                </circle>
+                <circle cx="174" cy="32" r="5" fill="#3B82F6" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.25" dur="0.3s" fill="freeze" begin="1.25s" />
+                </circle>
+                <rect x="166" y="40" width="16" height="2" rx="1" fill="#3B82F6" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.2" dur="0.3s" fill="freeze" begin="1.3s" />
+                </rect>
+
+                {/* Candidate node: bottom-left */}
+                <circle cx="40" cy="118" r="14" fill="url(#eNodeGreen)" opacity="0">
+                  <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="1.2s" />
+                  <animate attributeName="r" values="7;14" dur="0.4s" fill="freeze" begin="1.2s" calcMode="spline" keySplines="0.22 1 0.36 1" />
+                </circle>
+                <circle cx="40" cy="114" r="4.5" fill="#0F9A7A" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.25" dur="0.3s" fill="freeze" begin="1.4s" />
+                </circle>
+                <rect x="33" y="122" width="14" height="2" rx="1" fill="#0F9A7A" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.2" dur="0.3s" fill="freeze" begin="1.45s" />
+                </rect>
+
+                {/* Candidate node: bottom-right */}
+                <circle cx="178" cy="124" r="14" fill="url(#eNodeBlue)" opacity="0">
+                  <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="1.35s" />
+                  <animate attributeName="r" values="7;14" dur="0.4s" fill="freeze" begin="1.35s" calcMode="spline" keySplines="0.22 1 0.36 1" />
+                </circle>
+                <circle cx="178" cy="120" r="4.5" fill="#8B5CF6" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.25" dur="0.3s" fill="freeze" begin="1.55s" />
+                </circle>
+                <rect x="171" y="128" width="14" height="2" rx="1" fill="#8B5CF6" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.2" dur="0.3s" fill="freeze" begin="1.6s" />
+                </rect>
+
+                {/* Floating sparkle dots */}
+                <circle cx="80" cy="26" r="2" fill={SHELL_PRIMARY} fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.35;0.15;0.35" dur="3s" repeatCount="indefinite" begin="1.8s" />
+                </circle>
+                <circle cx="154" cy="82" r="1.5" fill="#3B82F6" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.3;0.1;0.3" dur="3.5s" repeatCount="indefinite" begin="2s" />
+                </circle>
+                <circle cx="84" cy="130" r="1.5" fill="#0F9A7A" fillOpacity="0">
+                  <animate attributeName="fill-opacity" values="0;0.3;0.1;0.3" dur="4s" repeatCount="indefinite" begin="2.2s" />
+                </circle>
+              </svg>
+            </Box>
+          </Stack>
+        </Box>
+      </MotionBox>
+
+      {/* Action cards row */}
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ position: "relative", zIndex: 1, mb: 3.5 }}>
+        {EMPTY_ACTIONS.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <MotionBox
+              key={item.action}
+              custom={i + 1}
+              variants={emptyScaleIn}
+              whileHover={{ y: -4, scale: 1.015, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => runAction(item.action)}
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                p: { xs: 2, sm: 2.5 },
+                borderRadius: "20px",
+                bgcolor: "#fff",
+                border: "1px solid rgba(220, 212, 202, 0.5)",
+                cursor: "pointer",
+                position: "relative",
+                overflow: "hidden",
+                isolation: "isolate",
+                boxShadow: "0 2px 8px rgba(23,18,14,0.03)",
+                transition: "border-color 0.25s ease, box-shadow 0.3s ease",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  background: `linear-gradient(90deg, ${item.accent}00, ${item.accent}, ${item.accent}00)`,
+                  opacity: 0,
+                  transition: "opacity 0.3s ease",
+                },
+                "&:hover": {
+                  borderColor: `${item.accent}44`,
+                  boxShadow: `0 12px 32px ${item.glowColor}, 0 2px 8px rgba(23,18,14,0.04)`,
+                  "&::before": { opacity: 1 },
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "14px",
+                  background: item.accentBg,
+                  color: item.accent,
+                  display: "grid",
+                  placeItems: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "0.95rem",
+                    color: SHELL_INK,
+                    mb: 0.5,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {item.title}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.8125rem",
+                    color: SHELL_MUTED,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {item.desc}
+                </Typography>
+              </Box>
+              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: "auto", pt: 0.5 }}>
+                <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: SHELL_PRIMARY }}>
+                  Get started
+                </Typography>
+                <ArrowForwardRoundedIcon sx={{ fontSize: 14, color: SHELL_PRIMARY }} />
+              </Stack>
+            </MotionBox>
+          );
+        })}
+      </Stack>
+
+      {/* Bottom row: checklist + tip side by side */}
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ position: "relative", zIndex: 1 }}>
+        {/* Quick-start checklist */}
+        <MotionBox custom={4} variants={emptyFadeUp} sx={{ flex: 1.2, minWidth: 0 }}>
+          <Box
+            sx={{
+              borderRadius: "22px",
+              p: { xs: 2.5, sm: 3 },
+              height: "100%",
+              bgcolor: "#fff",
+              border: "1px solid rgba(220, 212, 202, 0.45)",
+              boxShadow: "0 2px 8px rgba(23,18,14,0.03)",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "0.68rem",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(23,18,14,0.38)",
+                mb: 2.25,
+              }}
+            >
+              Quick-start checklist
+            </Typography>
+            <Stack spacing={2}>
+              {CHECKLIST.map((step, idx) => (
+                <MotionBox
+                  key={step.label}
+                  custom={idx + 5}
+                  variants={emptyFadeUp}
+                >
+                  <Stack direction="row" spacing={1.75} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: "10px",
+                        border: "1.5px solid rgba(220, 212, 202, 0.7)",
+                        display: "grid",
+                        placeItems: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: "0.65rem", fontWeight: 800, color: "rgba(23,18,14,0.3)", letterSpacing: "0.04em" }}>
+                        {step.num}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: "0.875rem",
+                        fontWeight: 500,
+                        color: SHELL_INK,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {step.label}
+                    </Typography>
+                  </Stack>
+                </MotionBox>
+              ))}
+            </Stack>
+          </Box>
+        </MotionBox>
+
+        {/* AI tip + ambient info */}
+        <MotionBox custom={5} variants={emptyFadeUp} sx={{ flex: 0.8, minWidth: 0 }}>
+          <Stack spacing={2} sx={{ height: "100%" }}>
+            <Box
+              sx={{
+                borderRadius: "22px",
+                p: { xs: 2.5, sm: 3 },
+                flex: 1,
+                background: "linear-gradient(155deg, rgba(248,114,58,0.08) 0%, rgba(248,114,58,0.02) 100%)",
+                border: "1px solid rgba(248, 114, 58, 0.16)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "12px",
+                  bgcolor: "rgba(248, 114, 58, 0.14)",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <AutoAwesomeOutlinedIcon sx={{ fontSize: 22, color: SHELL_PRIMARY }} />
+              </Box>
+              <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.4 }}>
+                AI-powered matching
+              </Typography>
+              <Typography sx={{ fontSize: "0.8125rem", color: SHELL_MUTED, lineHeight: 1.6 }}>
+                Once you publish a role, our AI scans thousands of profiles and surfaces the top candidates within minutes.
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                borderRadius: "22px",
+                p: { xs: 2.5, sm: 3 },
+                background: "linear-gradient(155deg, rgba(59,130,246,0.07) 0%, rgba(59,130,246,0.015) 100%)",
+                border: "1px solid rgba(59, 130, 246, 0.14)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "12px",
+                  bgcolor: "rgba(59, 130, 246, 0.12)",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <RocketLaunchOutlinedIcon sx={{ fontSize: 22, color: "#3B82F6" }} />
+              </Box>
+              <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.4 }}>
+                Built for speed
+              </Typography>
+              <Typography sx={{ fontSize: "0.8125rem", color: SHELL_MUTED, lineHeight: 1.6 }}>
+                Most teams go from first job post to shortlisted candidates in under 10 minutes.
+              </Typography>
+            </Box>
+          </Stack>
+        </MotionBox>
+      </Stack>
+    </MotionBox>
+  );
+}
+
 export default function RecruiterDashboardDummy({ onExit, onCreateJob }) {
   const [activeNav, setActiveNav] = useState("home");
   const [selectedJob, setSelectedJob] = useState(null);
   const [teamInviteAutoOpen, setTeamInviteAutoOpen] = useState(false);
+  const [showEmptyHome, setShowEmptyHome] = useState(true);
 
   const handleNav = (id) => {
     setActiveNav(id);
@@ -6935,10 +7541,16 @@ export default function RecruiterDashboardDummy({ onExit, onCreateJob }) {
     }
   };
 
+  const handleLogoClick = () => {
+    setActiveNav("home");
+    setSelectedJob(null);
+    setShowEmptyHome((prev) => !prev);
+  };
+
   const jobDetailOpen = activeNav === "jobs" && Boolean(selectedJob);
 
   return (
-    <RecruiterAppShell activeNav={activeNav} onNav={handleNav} onSignOut={onExit} mainScrollPt={jobDetailOpen ? 0 : 3.5}>
+    <RecruiterAppShell activeNav={activeNav} onNav={handleNav} onSignOut={onExit} onLogoClick={handleLogoClick} mainScrollPt={jobDetailOpen ? 0 : 3.5}>
       {activeNav === "jobs" ? (
         <JobsTabContent
           onCreateJob={handleCreateJob}
@@ -6949,6 +7561,15 @@ export default function RecruiterDashboardDummy({ onExit, onCreateJob }) {
         <TeamTabContent autoOpenInvite={teamInviteAutoOpen} onAutoOpenInviteHandled={() => setTeamInviteAutoOpen(false)} />
       ) : activeNav === "settings" ? (
         <RecruiterSettingsPanel />
+      ) : showEmptyHome ? (
+        <EmptyHomeContent
+          onCreateJob={handleCreateJob}
+          onOpenTeamInvite={() => {
+            setActiveNav("team");
+            setTeamInviteAutoOpen(true);
+          }}
+          onOpenSettings={() => setActiveNav("settings")}
+        />
       ) : (
         <HomeTabContent
           onCreateJob={handleCreateJob}
