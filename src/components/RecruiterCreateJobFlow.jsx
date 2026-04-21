@@ -54,8 +54,6 @@ import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
 import SpeedRoundedIcon from "@mui/icons-material/SpeedRounded";
 import LinkRoundedIcon2 from "@mui/icons-material/InsertLinkRounded";
 import PsychologyOutlinedIcon from "@mui/icons-material/PsychologyOutlined";
-import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
-import PersonSearchRoundedIcon from "@mui/icons-material/PersonSearchRounded";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
@@ -129,6 +127,100 @@ const SKILLS_MASTER_LIST = [
 
 /** Scratch Position: matches reference (Basic / Intermediate / Advanced). */
 const SCRATCH_EXPERTISE_LEVELS = ["Basic", "Intermediate", "Advanced"];
+
+/** Flat skill token: level dot + name + faded level word. No borders, no vertical strokes. */
+function ScratchSkillPill({ name, level, onRemove, listRole }) {
+  const displayLevel = level === "Beginner" ? "Basic" : level;
+  const isAdv = level === "Advanced";
+  const isInt = level === "Intermediate";
+  const levelColor = isAdv ? SHELL_PRIMARY : isInt ? "#1d4ed8" : SHELL_MUTED;
+
+  return (
+    <Box
+      component="span"
+      {...(listRole ? { role: listRole } : {})}
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        verticalAlign: "middle",
+        maxWidth: "100%",
+        minHeight: 26,
+        pl: 1,
+        pr: onRemove ? 0.35 : 1.1,
+        py: 0.3,
+        borderRadius: "999px",
+        bgcolor: "rgba(18,10,4,0.035)",
+        transition: "background-color 160ms ease",
+        flexShrink: 0,
+        "&:hover": { bgcolor: "rgba(18,10,4,0.055)" },
+      }}
+    >
+      <Box
+        component="span"
+        aria-hidden
+        sx={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          bgcolor: levelColor,
+          mr: 0.75,
+          flexShrink: 0,
+          boxShadow: `0 0 0 3px ${isAdv ? "rgba(248,114,58,0.14)" : isInt ? "rgba(29,78,216,0.12)" : "rgba(107,99,92,0.14)"}`,
+        }}
+      />
+      <Box
+        component="span"
+        sx={{
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+          color: SHELL_INK,
+          lineHeight: 1.2,
+          maxWidth: 168,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {name}
+      </Box>
+      <Box
+        component="span"
+        sx={{
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          color: SHELL_MUTED,
+          letterSpacing: "-0.005em",
+          lineHeight: 1.2,
+          ml: 0.75,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {displayLevel}
+      </Box>
+      {onRemove ? (
+        <IconButton
+          type="button"
+          size="small"
+          onClick={onRemove}
+          aria-label={`Remove ${name}`}
+          sx={{
+            width: 20,
+            height: 20,
+            p: 0,
+            ml: 0.65,
+            color: SHELL_MUTED,
+            borderRadius: "999px",
+            flexShrink: 0,
+            "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.05)" },
+          }}
+        >
+          <CloseRoundedIcon sx={{ fontSize: 13 }} />
+        </IconButton>
+      ) : null}
+    </Box>
+  );
+}
 
 const EDUCATION_OPTIONS = [
   "No requirement",
@@ -396,7 +488,7 @@ const scratchGroupedMicroHeadingSx = {
 
 const scratchGroupedPanelSx = {
   borderRadius: "14px",
-  border: "1px solid rgba(220, 212, 202, 0.36)",
+  border: "1px solid rgba(215, 206, 196, 0.46)",
   bgcolor: "rgba(255, 253, 249, 0.92)",
   px: { xs: 1.75, sm: 2.25 },
   pt: { xs: 1.75, sm: 2 },
@@ -634,21 +726,13 @@ const IMPORT_EXTRACTION_STEPS = [
 /** Time each import step stays active before advancing (ms). */
 const IMPORT_EXTRACTION_STEP_MS = 2200;
 
-/** Number of progress ticks while analyzing (drives % bar timing). */
+/** Legacy step count: multiplied by step interval to set analyzing screen duration before profile. */
 const ANALYSIS_STEP_COUNT = 5;
 
-/** Time each step stays on screen before advancing (ms). */
+/** Interval length used only to derive total analyzing duration (no per-step UI). */
 const ANALYSIS_STEP_INTERVAL_MS = 1200;
-/** Extra pause after the last step so users can read the full progress state before the profile loads (ms). */
+/** Extra pause at end of analyzing before the profile step loads (ms). */
 const ANALYSIS_PHASE_EXIT_DELAY_MS = 1800;
-
-const ANALYSIS_PHASE_LABELS = [
-  { verb: "Parsing", noun: "role requirements", icon: ArticleOutlinedIcon },
-  { verb: "Mapping", noun: "skill competencies", icon: AccountTreeOutlinedIcon },
-  { verb: "Calibrating", noun: "experience benchmarks", icon: SpeedRoundedIcon },
-  { verb: "Analyzing", noun: "market context", icon: TrendingUpRoundedIcon },
-  { verb: "Synthesizing", noun: "candidate blueprint", icon: PsychologyOutlinedIcon },
-];
 
 const PROFILE_PARTICLES = [
   { size: 5, top: "8%", left: "88%", dur: 6.4, delay: 0.1, opacity: 0.078 },
@@ -1186,7 +1270,6 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [jdFileName, setJdFileName] = useState("");
   const [jdDropHover, setJdDropHover] = useState(false);
   const [positionSelectMenuOpen, setPositionSelectMenuOpen] = useState(() => ({ ...POSITION_SELECT_MENU_INITIAL }));
-  const [analysisStep, setAnalysisStep] = useState(0);
   const [collaboratorInput, setCollaboratorInput] = useState("");
   const [collaborators, setCollaborators] = useState([]);
   const [publishing, setPublishing] = useState(false);
@@ -1343,18 +1426,11 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
 
   useEffect(() => {
     if (phase !== "analyzing") return;
-    setAnalysisStep(0);
-    let step = 0;
-    const iv = setInterval(() => {
-      step += 1;
-      if (step < ANALYSIS_STEP_COUNT) {
-        setAnalysisStep(step);
-      } else {
-        clearInterval(iv);
-        setTimeout(() => setPhase("profile"), ANALYSIS_PHASE_EXIT_DELAY_MS);
-      }
-    }, ANALYSIS_STEP_INTERVAL_MS);
-    return () => clearInterval(iv);
+    const totalMs = ANALYSIS_STEP_COUNT * ANALYSIS_STEP_INTERVAL_MS + ANALYSIS_PHASE_EXIT_DELAY_MS;
+    const t = window.setTimeout(() => {
+      setPhase("profile");
+    }, totalMs);
+    return () => window.clearTimeout(t);
   }, [phase]);
 
   const handleNav = (id) => {
@@ -1815,7 +1891,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     borderRadius: "999px",
                     bgcolor: "rgba(107, 99, 92, 0.08)",
                     border: "1px solid rgba(220, 212, 202, 0.55)",
-                    boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.65)",
+                    boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.35)",
                     "& .MuiToggleButtonGroup-grouped": {
                       border: "0 !important",
                       borderRadius: "999px !important",
@@ -1830,18 +1906,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       fontSize: "0.8125rem",
                       letterSpacing: "-0.01em",
                       color: SHELL_MUTED,
-                      bgcolor: "#fff",
+                      bgcolor: "transparent",
                       py: 0.65,
                       px: 1.25,
                       transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                      "&:not(.Mui-selected):hover": {
+                        bgcolor: "rgba(107, 99, 92, 0.06)",
+                      },
                       "&.Mui-selected": {
                         color: SHELL_INK,
-                        bgcolor: "#fff",
+                        bgcolor: "#ffffff",
                         boxShadow: "0 1px 4px rgba(18, 10, 4, 0.08)",
-                        "&:hover": { bgcolor: "#fff" },
                       },
-                      "&:hover": {
-                        bgcolor: "rgba(255, 255, 255, 0.45)",
+                      "&.Mui-selected:hover": {
+                        bgcolor: "#ffffff",
                       },
                     },
                   }}
@@ -2258,7 +2336,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                                 textTransform: "none",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
-                                borderColor: "rgba(220,212,202,0.6)",
+                                borderColor: "rgba(200,190,178,0.72)",
                                 color: SHELL_MUTED,
                                 "&:hover": {
                                   borderColor: SHELL_INK,
@@ -2266,7 +2344,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                                   bgcolor: "rgba(0,0,0,0.02)",
                                 },
                                 "&.Mui-disabled": {
-                                  borderColor: "rgba(220,212,202,0.45)",
+                                  borderColor: "rgba(200,190,178,0.52)",
                                   color: SHELL_MUTED,
                                 },
                               }}
@@ -2279,47 +2357,16 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     </Grid>
 
                     {scratchSkills.length > 0 ? (
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 2 }}>
-                        {scratchSkills.map((sk) => {
-                          const mid = sk.level === "Intermediate";
-                          const high = sk.level === "Advanced";
-                          return (
-                            <Chip
-                              key={sk.name}
-                              label={
-                                <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-                                  {sk.name}
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      fontSize: "0.625rem",
-                                      fontWeight: 700,
-                                      color: high ? SHELL_PRIMARY : mid ? "#2563eb" : SHELL_MUTED,
-                                      bgcolor: high ? "rgba(248,114,58,0.1)" : mid ? "rgba(37,99,235,0.08)" : "rgba(107,99,92,0.08)",
-                                      px: 0.65,
-                                      py: 0.1,
-                                      borderRadius: "4px",
-                                      lineHeight: 1.4,
-                                    }}
-                                  >
-                                    {sk.level === "Beginner" ? "Basic" : sk.level}
-                                  </Box>
-                                </Box>
-                              }
-                              size="small"
-                              onDelete={() => setScratchSkills((prev) => prev.filter((s) => s.name !== sk.name))}
-                              sx={{
-                                borderRadius: "8px",
-                                fontWeight: 600,
-                                fontSize: "0.8125rem",
-                                bgcolor: "#fff",
-                                border: "1px solid rgba(220,212,202,0.5)",
-                                color: SHELL_INK,
-                                "& .MuiChip-deleteIcon": { color: SHELL_MUTED, fontSize: 16, "&:hover": { color: SHELL_INK } },
-                              }}
-                            />
-                          );
-                        })}
+                      <Box role="list" aria-label="Skills added for this role" sx={{ display: "flex", flexWrap: "wrap", gap: 0.65, mt: 2, alignItems: "center" }}>
+                        {scratchSkills.map((sk) => (
+                          <ScratchSkillPill
+                            key={sk.name}
+                            name={sk.name}
+                            level={sk.level}
+                            listRole="listitem"
+                            onRemove={() => setScratchSkills((prev) => prev.filter((s) => s.name !== sk.name))}
+                          />
+                        ))}
                       </Box>
                     ) : null}
                     {scratchSkills.length >= 10 ? (
@@ -2549,7 +2596,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               textTransform: "none",
               fontWeight: 600,
               fontSize: "0.875rem",
-              borderColor: "rgba(220,212,202,0.6)",
+              borderColor: "rgba(200,190,178,0.72)",
               color: SHELL_MUTED,
               "&:hover": { borderColor: SHELL_INK, color: SHELL_INK, bgcolor: "rgba(0,0,0,0.02)" },
             }}
@@ -2578,8 +2625,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
       </Box>
     );
   } else if (phase === "analyzing") {
-    const overallPct = Math.min(100, ((analysisStep + 1) / ANALYSIS_STEP_COUNT) * 100);
-    const currentPhase = ANALYSIS_PHASE_LABELS[analysisStep];
+    const roleLabel = jobTitle?.trim() || "ideal candidate";
 
     body = (
       <Box
@@ -2597,39 +2643,34 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
           alignItems: "center",
           justifyContent: "center",
           px: { xs: 2, md: 3 },
-          py: { xs: 2, md: 2.5 },
+          py: { xs: 3, md: 4 },
           bgcolor: "#fdfcfa",
           "@keyframes analyzeFadeUp": {
-            from: { opacity: 0, transform: "translateY(16px)" },
+            from: { opacity: 0, transform: "translateY(14px)" },
             to: { opacity: 1, transform: "translateY(0)" },
           },
-          "@keyframes analyzeIconPulse": {
-            "0%, 100%": { transform: "scale(1)", boxShadow: "0 0 0 0 rgba(248,114,58,0.14)" },
-            "50%": { transform: "scale(1.06)", boxShadow: "0 0 0 20px rgba(248,114,58,0)" },
+          "@keyframes analyzeFadeIn": {
+            from: { opacity: 0 },
+            to: { opacity: 1 },
           },
-          "@keyframes analyzeRingSpin": {
+          "@keyframes analyzeCaretBlink": {
+            "0%, 55%": { opacity: 1 },
+            "60%, 100%": { opacity: 0 },
+          },
+          "@keyframes analyzeUnderlineSweep": {
+            from: { transform: "scaleX(0)" },
+            to: { transform: "scaleX(1)" },
+          },
+          "@keyframes analyzeBlobDrift": {
+            "0%, 100%": { transform: "translate(-50%, -50%) scale(1)" },
+            "50%": { transform: "translate(-48%, -52%) scale(1.05)" },
+          },
+          "@keyframes analyzeSpinnerRotate": {
             from: { transform: "rotate(0deg)" },
             to: { transform: "rotate(360deg)" },
           },
-          "@keyframes analyzeRingSpinReverse": {
-            from: { transform: "rotate(360deg)" },
-            to: { transform: "rotate(0deg)" },
-          },
-          "@keyframes analyzeGlow": {
-            "0%, 100%": { opacity: 0.5, transform: "scale(1)" },
-            "50%": { opacity: 0.9, transform: "scale(1.06)" },
-          },
-          "@keyframes analyzePhaseIn": {
-            from: { opacity: 0, transform: "translateY(8px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
-          "@keyframes analyzeBarPulse": {
-            "0%, 100%": { opacity: 1 },
-            "50%": { opacity: 0.55 },
-          },
         }}
       >
-        {/* Single soft blob for ambient warmth */}
         <Box
           aria-hidden
           sx={{
@@ -2637,18 +2678,19 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             zIndex: 0,
             top: "50%",
             left: "50%",
-            width: { xs: 320, md: 440 },
-            height: { xs: 320, md: 440 },
+            width: { xs: 380, md: 560 },
+            height: { xs: 380, md: 560 },
             transform: "translate(-50%, -50%)",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(248,114,58,0.08) 0%, rgba(248,155,105,0.03) 50%, transparent 72%)",
-            filter: "blur(60px)",
+              "radial-gradient(circle, rgba(248,114,58,0.09) 0%, rgba(248,155,105,0.035) 52%, transparent 72%)",
+            filter: "blur(70px)",
+            animation: "analyzeBlobDrift 8s ease-in-out infinite",
             pointerEvents: "none",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         />
 
-        {/* Centered content */}
         <Box
           sx={{
             position: "relative",
@@ -2657,186 +2699,157 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            maxWidth: 400,
+            width: "100%",
+            maxWidth: 620,
             mx: "auto",
             animation: "analyzeFadeUp 0.5s ease-out both",
           }}
         >
-          {/* Icon stage: outer rotating rings + crossfading icons */}
           <Box
+            aria-label="Analyzing ideal candidate profile"
+            role="status"
             sx={{
-              width: 130,
-              height: 130,
-              mb: 4,
               position: "relative",
-              display: "grid",
-              placeItems: "center",
+              width: 44,
+              height: 44,
+              mb: { xs: 2, md: 2.5 },
+              animation: "analyzeFadeIn 0.45s ease-out both",
             }}
           >
-            {/* Soft glow behind rings */}
-            <Box
-              aria-hidden
-              sx={{
-                position: "absolute",
-                inset: 8,
-                borderRadius: "50%",
-                background:
-                  "radial-gradient(circle, rgba(248,114,58,0.14) 0%, rgba(248,114,58,0.04) 55%, transparent 70%)",
-                animation: "analyzeGlow 3.2s ease-in-out infinite",
-                pointerEvents: "none",
-                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-              }}
-            />
-            {/* Outer dashed ring (clearly visible, full 130) */}
             <Box
               aria-hidden
               sx={{
                 position: "absolute",
                 inset: 0,
                 borderRadius: "50%",
-                border: "2px dashed rgba(248,114,58,0.22)",
-                animation: "analyzeRingSpin 14s linear infinite",
-                pointerEvents: "none",
-                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+                border: "2.5px solid rgba(248,114,58,0.10)",
               }}
             />
-            {/* Inner dotted ring, counter-rotates for fluid depth */}
             <Box
               aria-hidden
               sx={{
                 position: "absolute",
-                inset: 10,
+                inset: 0,
                 borderRadius: "50%",
-                border: "1.5px dotted rgba(248,114,58,0.16)",
-                animation: "analyzeRingSpinReverse 22s linear infinite",
-                pointerEvents: "none",
+                background: `conic-gradient(from 0deg, rgba(248,114,58,0) 0deg, rgba(248,114,58,0) 30deg, rgba(248,114,58,0.06) 140deg, rgba(248,114,58,0.5) 260deg, ${SHELL_PRIMARY} 340deg, ${SHELL_PRIMARY} 360deg)`,
+                WebkitMask: "radial-gradient(circle, transparent 18px, #000 19.5px)",
+                mask: "radial-gradient(circle, transparent 18px, #000 19.5px)",
+                animation: "analyzeSpinnerRotate 0.85s linear infinite",
+                "@media (prefers-reduced-motion: reduce)": {
+                  animation: "analyzeSpinnerRotate 3.5s linear infinite",
+                },
+              }}
+            />
+          </Box>
+
+          <Typography
+            component="h1"
+            sx={{
+              fontSize: { xs: "1.4rem", sm: "1.6rem", md: "1.75rem" },
+              fontWeight: 700,
+              letterSpacing: "-0.025em",
+              color: SHELL_INK,
+              lineHeight: 1.22,
+              mb: 0.5,
+              animation: "analyzeFadeUp 0.55s ease-out 0.08s both",
+            }}
+          >
+            Building your ideal
+          </Typography>
+
+          <Box
+            sx={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "baseline",
+              mb: { xs: 1.75, md: 2 },
+              animation: "analyzeFadeUp 0.6s ease-out 0.16s both",
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                fontSize: { xs: "1.65rem", sm: "1.9rem", md: "2.1rem" },
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                lineHeight: 1.15,
+                color: SHELL_PRIMARY,
+                textAlign: "center",
+              }}
+            >
+              {roleLabel}
+            </Typography>
+            <Box
+              aria-hidden
+              sx={{
+                display: "inline-block",
+                width: { xs: 2, md: 3 },
+                height: { xs: "1.5rem", sm: "1.75rem", md: "1.9rem" },
+                ml: 0.5,
+                bgcolor: SHELL_PRIMARY,
+                borderRadius: 1,
+                animation: "analyzeCaretBlink 1.1s steps(1) infinite",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               }}
             />
             <Box
+              aria-hidden
               sx={{
-                width: 76,
-                height: 76,
-                borderRadius: "20px",
-                bgcolor: "rgba(248,114,58,0.08)",
-                border: "1.5px solid rgba(248,114,58,0.2)",
-                position: "relative",
-                display: "grid",
-                placeItems: "center",
-                animation: "analyzeIconPulse 2.8s ease-in-out infinite",
+                position: "absolute",
+                left: 0,
+                right: { xs: 6, md: 10 },
+                bottom: -6,
+                height: 3,
+                borderRadius: 2,
+                background:
+                  "linear-gradient(90deg, rgba(248,114,58,0.85), rgba(248,114,58,0.2))",
+                transformOrigin: "left center",
+                animation: "analyzeUnderlineSweep 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               }}
-            >
-              {ANALYSIS_PHASE_LABELS.map((phase, idx) => {
-                const StepIcon = phase.icon;
-                const active = idx === analysisStep;
-                return (
-                  <Box
-                    key={phase.verb}
-                    aria-hidden={!active}
-                    sx={{
-                      position: "absolute",
-                      inset: 0,
-                      display: "grid",
-                      placeItems: "center",
-                      opacity: active ? 1 : 0,
-                      transform: active ? "scale(1) rotate(0deg)" : "scale(0.82) rotate(-6deg)",
-                      transition:
-                        "opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)",
-                      pointerEvents: "none",
-                      "@media (prefers-reduced-motion: reduce)": {
-                        transition: "opacity 0.2s ease",
-                        transform: active ? "scale(1)" : "scale(1)",
-                      },
-                    }}
-                  >
-                    <StepIcon
-                      sx={{
-                        color: SHELL_PRIMARY,
-                        fontSize: 32,
-                        filter: active ? "drop-shadow(0 2px 8px rgba(248,114,58,0.2))" : "none",
-                        transition: "filter 0.45s ease",
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Box>
+            />
           </Box>
 
-          {/* Headline */}
           <Typography
             sx={{
-              fontSize: { xs: "1.25rem", md: "1.4rem" },
-              fontWeight: 700,
-              letterSpacing: "-0.025em",
-              color: SHELL_INK,
-              lineHeight: 1.3,
-              mb: 1,
-            }}
-          >
-            {jobTitle ? `Building the ${jobTitle} profile` : "Crafting your candidate profile"}
-          </Typography>
-
-          {/* Current phase label */}
-          <Typography
-            key={analysisStep}
-            sx={{
-              fontSize: "0.9375rem",
+              fontSize: { xs: "0.9375rem", md: "1rem" },
               fontWeight: 500,
               color: SHELL_MUTED,
-              mb: { xs: 5, md: 6 },
-              animation: "analyzePhaseIn 0.35s ease-out both",
-              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+              lineHeight: 1.55,
+              maxWidth: 560,
+              mb: { xs: 3, md: 3.5 },
+              animation: "analyzeFadeUp 0.6s ease-out 0.28s both",
             }}
           >
-            {currentPhase?.verb}{" "}
-            <Box component="span" sx={{ color: SHELL_INK, fontWeight: 600 }}>
-              {currentPhase?.noun}
-            </Box>
-            ...
+            We're shaping who your ideal hire is for this role. Refine that profile with your hiring manager so Zappyfind can surface the strongest matches.
           </Typography>
 
-          {/* Minimal progress bar */}
-          <Box
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.85}
             sx={{
-              width: "100%",
-              maxWidth: 280,
-              mx: "auto",
+              mt: { xs: 2.25, md: 2.75 },
+              px: 1.5,
+              py: 0.65,
+              borderRadius: "999px",
+              bgcolor: "rgba(107,99,92,0.06)",
+              border: "1px solid rgba(220,212,202,0.55)",
+              animation: "analyzeFadeUp 0.6s ease-out 0.6s both",
             }}
           >
-            <Box
-              sx={{
-                height: 3,
-                borderRadius: 1.5,
-                bgcolor: "rgba(220,212,202,0.3)",
-                overflow: "hidden",
-              }}
-            >
-              <Box
-                sx={{
-                  height: "100%",
-                  borderRadius: 1.5,
-                  bgcolor: SHELL_PRIMARY,
-                  width: `${overallPct}%`,
-                  transition: "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-                  animation: "analyzeBarPulse 1.5s ease-in-out infinite",
-                  "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-                }}
-              />
-            </Box>
+            <Diversity3OutlinedIcon sx={{ fontSize: 15, color: SHELL_MUTED }} />
             <Typography
               sx={{
-                mt: 1.5,
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 color: SHELL_MUTED,
-                letterSpacing: "0.04em",
+                lineHeight: 1.25,
               }}
             >
-              {Math.round(overallPct)}%
+              You and your hiring manager will review and refine in the next step.
             </Typography>
-          </Box>
+          </Stack>
         </Box>
       </Box>
     );
@@ -2948,7 +2961,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
           position: "relative",
           overflow: "hidden",
           mx: { xs: -1.75, md: -2.5 },
-          mt: { xs: -2, md: -2.5 },
+          mt: -3.5,
           mb: { xs: -2, md: -2.5 },
           width: { xs: "calc(100% + 28px)", md: "calc(100% + 40px)" },
           bgcolor: "#faf9f8",
@@ -2989,9 +3002,23 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             from: { transform: "translateY(0)" },
             to: { transform: "translateY(24px)" },
           },
+          "@keyframes profInsightBreathe": {
+            "0%, 100%": {
+              boxShadow:
+                "0 1px 0 rgba(255,255,255,0.9) inset, 0 2px 10px rgba(248,114,58,0.05), 0 0 0 1px rgba(248,114,58,0)",
+            },
+            "50%": {
+              boxShadow:
+                "0 1px 0 rgba(255,255,255,0.9) inset, 0 12px 28px rgba(248,114,58,0.16), 0 0 0 1px rgba(248,114,58,0.14)",
+            },
+          },
+          "@keyframes profInsightSheen": {
+            "0%, 100%": { opacity: 0.22, transform: "translateX(-8%)" },
+            "50%": { opacity: 0.9, transform: "translateX(8%)" },
+          },
         }}
       >
-        {/* ── Benchmark screen: ambient background (unique to this phase) ── */}
+        {/* ── Benchmark screen: calm ambient (one gentle glow, no grid or aurora) ── */}
         <Box
           aria-hidden
           sx={{
@@ -2999,7 +3026,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             inset: 0,
             zIndex: 0,
             pointerEvents: "none",
-            background: "linear-gradient(180deg, #ffffff 0%, rgba(255,252,250,0.97) 22%, rgba(250,246,242,0.92) 55%, rgba(245,238,232,0.88) 100%)",
+            background:
+              "linear-gradient(180deg, #ffffff 0%, rgba(255,252,250,0.98) 24%, rgba(250,246,242,0.94) 62%, rgba(245,238,232,0.9) 100%)",
           }}
         />
         <Box
@@ -3007,76 +3035,16 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
           sx={{
             position: "absolute",
             zIndex: 0,
+            top: "-18%",
             left: "50%",
-            top: "-42%",
-            width: "min(140%, 920px)",
-            height: "72%",
             transform: "translateX(-50%)",
+            width: "min(100%, 720px)",
+            height: 380,
             pointerEvents: "none",
-          }}
-        >
-          <Box
-            sx={{
-              width: "100%",
-              height: "100%",
-              opacity: 0.9,
-              background: `conic-gradient(from 210deg at 50% 50%, rgba(248,114,58,0.14) 0deg, rgba(255,190,150,0.1) 95deg, rgba(255,255,255,0) 200deg, rgba(248,114,58,0.06) 285deg, rgba(248,114,58,0.12) 360deg)`,
-              filter: "blur(56px)",
-              animation: "profAuroraRotate 48s linear infinite",
-              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-            }}
-          />
-        </Box>
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            zIndex: 0,
-            bottom: "-18%",
-            right: "-20%",
-            width: "min(95%, 640px)",
-            aspectRatio: "1.15",
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 42% 44%, rgba(248,114,58,0.2) 0%, rgba(255,175,130,0.08) 45%, transparent 68%)",
-            filter: "blur(52px)",
-            pointerEvents: "none",
-            willChange: "transform",
-            animation: "profMeshDriftA 22s ease-in-out infinite",
-            "@media (prefers-reduced-motion: reduce)": { animation: "none", willChange: "auto" },
-          }}
-        />
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            zIndex: 0,
-            top: "8%",
-            left: "-24%",
-            width: "min(85%, 520px)",
-            aspectRatio: "1.2",
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 55% 50%, rgba(255,200,170,0.16) 0%, rgba(255,230,210,0.06) 48%, transparent 72%)",
-            filter: "blur(60px)",
-            pointerEvents: "none",
-            willChange: "transform",
-            animation: "profMeshDriftB 28s ease-in-out infinite",
-            "@media (prefers-reduced-motion: reduce)": { animation: "none", willChange: "auto" },
-          }}
-        />
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            opacity: 0.45,
-            pointerEvents: "none",
-            backgroundImage: `linear-gradient(rgba(107,99,92,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(107,99,92,0.04) 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-            backgroundPosition: "center top",
-            maskImage: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.12) 38%, transparent 72%)",
-            WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.12) 38%, transparent 72%)",
-            animation: "profGridDrift 32s linear infinite",
+            background:
+              "radial-gradient(60% 60% at 50% 40%, rgba(248,114,58,0.12) 0%, rgba(248,114,58,0.04) 48%, transparent 72%)",
+            filter: "blur(36px)",
+            animation: "profMeshDriftA 26s ease-in-out infinite",
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         />
@@ -3086,114 +3054,49 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
           sx={{
             position: "relative",
             zIndex: 1,
-            pt: { xs: 2, md: 2.5 },
-            pb: { xs: 3.5, md: 4 },
+            pt: 4,
+            pb: { xs: 3, md: 1.5 },
             px: { xs: 2, md: 3 },
           }}
         >
-          <IconButton
-            aria-label="Back to job form"
-            onClick={() => setPhase("scratch")}
-            size="small"
-            sx={{
-              color: SHELL_MUTED,
-              ml: -1,
-              mb: 1.25,
-              opacity: 0,
-              animation: "profHeroIn 0.55s cubic-bezier(0.23, 1, 0.32, 1) 0.05s forwards",
-              "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
-              "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.04)" },
-            }}
-          >
-            <ArrowBackRoundedIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2.5 }} alignItems={{ xs: "flex-start", sm: "flex-start" }}>
-            <Box sx={{ position: "relative", width: 56, height: 56, flexShrink: 0, mt: { xs: 0, sm: 0.25 } }}>
-              <Box
-                aria-hidden
-                sx={{
-                  position: "absolute",
-                  inset: -6,
-                  borderRadius: "50%",
-                  border: `2px solid ${SHELL_PRIMARY}`,
-                  animation: "profRingPulse 2.8s ease-in-out 1s infinite",
-                  "@media (prefers-reduced-motion: reduce)": { animation: "none", opacity: 0.22, transform: "scale(1)", inset: -4 },
-                }}
-              />
-              <Box
-                sx={{
-                  position: "relative",
-                  width: 56,
-                  height: 56,
-                  borderRadius: "50%",
-                  display: "grid",
-                  placeItems: "center",
-                  bgcolor: "#fff",
-                  border: "1px solid rgba(248,114,58,0.28)",
-                  boxShadow: `
-                    0 0 0 1px rgba(255,255,255,0.9) inset,
-                    0 12px 32px rgba(248,114,58,0.12),
-                    0 4px 12px rgba(18,10,4,0.06)
-                  `,
-                  opacity: 0,
-                  animation: "profMedallionIn 0.75s cubic-bezier(0.23, 1, 0.32, 1) 0.12s forwards",
-                  "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
-                }}
-              >
-                <VerifiedRoundedIcon sx={{ fontSize: 30, color: SHELL_PRIMARY }} />
+          <Box sx={{ minWidth: 0, mb: { xs: 2, md: 2.25 } }}>
+            <Typography
+              component="h1"
+              sx={{
+                fontSize: { xs: "1.4rem", sm: "1.6rem", md: "1.75rem" },
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                color: SHELL_INK,
+                lineHeight: 1.2,
+                mb: 0.5,
+                opacity: 0,
+                animation: "profHeroIn 0.75s cubic-bezier(0.23, 1, 0.32, 1) 0.12s forwards",
+                "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
+              }}
+            >
+              Your ideal{" "}
+              <Box component="span" sx={{ color: SHELL_PRIMARY }}>
+                {jobTitle?.trim() || "candidate"}
               </Box>
-            </Box>
-
-            <Box sx={{ minWidth: 0, flex: 1, pb: 0.15 }}>
-              <Typography
-                component="h1"
-                sx={{
-                  fontSize: { xs: "1.3rem", sm: "1.45rem", md: "1.55rem" },
-                  fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                  color: SHELL_INK,
-                  lineHeight: 1.25,
-                  mb: 1,
-                  maxWidth: 820,
-                  whiteSpace: { xs: "normal", md: "nowrap" },
-                  opacity: 0,
-                  animation: "profHeroIn 0.75s cubic-bezier(0.23, 1, 0.32, 1) 0.18s forwards",
-                  "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
-                }}
-              >
-                {`Before you publish, align on what \u201cgreat\u201d looks like`}
-              </Typography>
-              <Box
-                aria-hidden
-                sx={{
-                  height: 3,
-                  maxWidth: { xs: 200, sm: 280 },
-                  borderRadius: "999px",
-                  mb: 1.25,
-                  background: `linear-gradient(90deg, ${SHELL_PRIMARY} 0%, rgba(248,114,58,0.35) 55%, transparent 100%)`,
-                  transformOrigin: "left center",
-                  transform: "scaleX(0)",
-                  animation: "profHeroLine 1s cubic-bezier(0.23, 1, 0.32, 1) 0.45s forwards",
-                  "@media (prefers-reduced-motion: reduce)": { transform: "scaleX(1)", animation: "none" },
-                }}
-              />
-              <Typography
-                sx={{
-                  fontSize: { xs: "0.8125rem", md: "0.875rem" },
-                  color: SHELL_MUTED,
-                  lineHeight: 1.6,
-                  fontWeight: 400,
-                  maxWidth: { xs: "100%", sm: 560 },
-                  opacity: 0,
-                  animation: "profHeroIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.32s forwards",
-                  "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
-                }}
-              >
-                This benchmark was generated from what you entered. Review it, then share it with your hiring manager so you both agree on the bar before anyone is sourced.
-              </Typography>
-            </Box>
-          </Stack>
+            </Typography>
+            <Typography
+              component="p"
+              sx={{
+                m: 0,
+                paddingTop: "6px",
+                maxWidth: { xs: "100%", md: "min(880px, 100%)" },
+                fontSize: { xs: "0.8125rem", md: "0.875rem" },
+                color: SHELL_MUTED,
+                lineHeight: 1.55,
+                fontWeight: 500,
+                opacity: 0,
+                animation: "profHeroIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.22s forwards",
+                "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
+              }}
+            >
+              Based on the job details you shared, this is who we believe fits this role best. Review the signals and competencies below, then align with your hiring manager so Zappyfind recommends candidates that closely match this profile.
+            </Typography>
+          </Box>
         </Box>
 
         {/* ====== CONTENT AREA ====== */}
@@ -3206,29 +3109,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             pb: { xs: "calc(20px + env(safe-area-inset-bottom, 0px))", md: "calc(24px + env(safe-area-inset-bottom, 0px))" },
           }}
         >
-          {/* ── Beyond-your-JD insights ── */}
+          {/* ── Beyond-job-description insights ── */}
           <Box sx={{ mb: { xs: 3.5, md: 4 }, animation: "profFadeUp 0.4s ease-out both" }}>
-            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: { xs: 2.25, md: 2.5 } }}>
-              <AutoFixHighOutlinedIcon sx={{ fontSize: 20, color: SHELL_PRIMARY, flexShrink: 0 }} />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: { xs: 2, md: 2.25 } }}>
+              <AutoFixHighOutlinedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY, flexShrink: 0 }} />
               <Typography
                 sx={{
-                  fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                  fontSize: { xs: "0.875rem", md: "0.9375rem" },
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: SHELL_INK,
                   lineHeight: 1.25,
                 }}
               >
-                {String(jobTitle ?? "").trim() ? (
-                  <>
-                    What we identified beyond your JD for{" "}
-                    <Box component="span" sx={{ fontStyle: "italic" }}>
-                      {String(jobTitle).trim()}
-                    </Box>
-                  </>
-                ) : (
-                  "What we identified beyond your JD"
-                )}
+                Signals we picked up beyond your job description
               </Typography>
             </Stack>
             <Grid container spacing={{ xs: 2, md: 2.5 }}>
@@ -3238,6 +3132,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                 <Grid key={ins.signal} size={{ xs: 12, sm: 4 }}>
                   <Box
                     sx={{
+                      position: "relative",
                       borderRadius: "16px",
                       border: "1px solid rgba(220,212,202,0.45)",
                       bgcolor: "#fff",
@@ -3245,7 +3140,32 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      animation: `profFadeUp 0.35s ease-out ${0.06 * (idx + 1)}s both`,
+                      overflow: "hidden",
+                      transition:
+                        "transform 260ms cubic-bezier(0.23,1,0.32,1), box-shadow 260ms ease, border-color 260ms ease",
+                      animation: `profFadeUp 0.35s ease-out ${0.06 * (idx + 1)}s both, profInsightBreathe 5.4s ease-in-out ${0.9 + idx * 0.7}s infinite`,
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: "10%",
+                        right: "10%",
+                        height: "1px",
+                        background: `linear-gradient(90deg, transparent 0%, ${theme.iconColor} 50%, transparent 100%)`,
+                        opacity: 0.25,
+                        animation: `profInsightSheen 5.4s ease-in-out ${0.9 + idx * 0.7}s infinite`,
+                        pointerEvents: "none",
+                      },
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        borderColor: "rgba(248,114,58,0.3)",
+                        boxShadow:
+                          "0 1px 0 rgba(255,255,255,0.9) inset, 0 16px 32px rgba(248,114,58,0.2), 0 0 0 1px rgba(248,114,58,0.22)",
+                      },
+                      "@media (prefers-reduced-motion: reduce)": {
+                        animation: `profFadeUp 0.35s ease-out ${0.06 * (idx + 1)}s both`,
+                        "&::before": { animation: "none", opacity: 0.35 },
+                      },
                     }}
                   >
                     <Box
@@ -3292,18 +3212,26 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             {/* ── Identity row ── */}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.75} alignItems={{ xs: "flex-start", sm: "center" }} sx={{ mb: 2.25 }}>
               <Box
+                aria-hidden
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
+                  width: 48,
+                  height: 48,
+                  borderRadius: "14px",
                   flexShrink: 0,
                   display: "grid",
                   placeItems: "center",
-                  bgcolor: "rgba(37, 99, 235, 0.08)",
-                  border: "1px solid rgba(37, 99, 235, 0.18)",
+                  fontWeight: 800,
+                  fontSize: "0.8125rem",
+                  letterSpacing: "-0.04em",
+                  fontFeatureSettings: '"tnum"',
+                  color: "#B94914",
+                  background:
+                    "linear-gradient(152deg, rgba(255,255,255,0.98) 0%, rgba(255,246,238,0.95) 48%, rgba(255,228,210,0.88) 100%)",
+                  border: "1px solid rgba(248,114,58,0.32)",
+                  boxShadow: "none",
                 }}
               >
-                <PersonSearchOutlinedIcon sx={{ fontSize: 22, color: "#2563eb" }} />
+                {initials}
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
@@ -3339,6 +3267,67 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             </Stack>
 
             <Box sx={{ height: "1px", bgcolor: "rgba(220,212,202,0.38)", mb: 2.25 }} />
+
+            {scratchSkills.length > 0 ? (
+              <Box sx={{ mb: 2.5 }}>
+                <Typography
+                  component="h3"
+                  sx={{
+                    fontSize: "0.8125rem",
+                    fontWeight: 700,
+                    color: SHELL_INK,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Required skills
+                </Typography>
+                <Box
+                  role="list"
+                  aria-label="Required skills from job details"
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 0.85,
+                    alignItems: "center",
+                    paddingTop: "8px",
+                  }}
+                >
+                  {scratchSkills.map((sk) => (
+                    <ScratchSkillPill key={sk.name} name={sk.name} level={sk.level} listRole="listitem" />
+                  ))}
+                </Box>
+              </Box>
+            ) : null}
+
+            {/* ── Competency framing ── */}
+            <Typography
+              component="p"
+              sx={{
+                m: 0,
+                mb: 1.75,
+                fontSize: "0.75rem",
+                lineHeight: 1.55,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 700,
+                  color: SHELL_INK,
+                }}
+              >
+                Competencies we recommend
+              </Box>
+              <Box component="span" sx={{ color: SHELL_MUTED, fontWeight: 500 }} aria-hidden>
+                {" \u00b7 "}
+              </Box>
+              <Box component="span" sx={{ color: SHELL_MUTED, fontWeight: 500 }}>
+                {"Adjust levels, remove what doesn\u2019t apply, or add your own."}
+              </Box>
+            </Typography>
+
             <Grid container spacing={2.5} sx={{ overflow: "visible" }}>
               <Grid size={{ xs: 12, md: 6 }} sx={{ overflow: "visible", minWidth: 0 }}>
                 <Stack
@@ -4132,13 +4121,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       fontSize: "0.8125rem",
                       color: SHELL_MUTED,
                       px: 2,
-                      "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.04)" },
+                      borderColor: "rgba(220,212,202,0.7)",
+                      "&:hover": {
+                        color: SHELL_INK,
+                        bgcolor: "rgba(0,0,0,0.04)",
+                        borderColor: "rgba(190,180,168,0.85)",
+                      },
                     }}
                   >
                     Skip and continue to review
                   </Button>
                   <Button
-                    variant="text"
+                    variant="contained"
+                    color="primary"
+                    disableElevation
                     startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important" }} />}
                     onClick={() => {
                       setSendHmLeavingStacked(false);
@@ -4151,14 +4147,16 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       fontSize: "0.875rem",
                       px: 2.5,
                       py: 1,
-                      color: SHELL_PRIMARY,
-                      border: "1px solid rgba(248,114,58,0.55) !important",
-                      bgcolor: "#fff !important",
-                      boxShadow: "none",
+                      color: "#fff",
+                      bgcolor: SHELL_PRIMARY,
+                      boxShadow: "0 6px 18px rgba(248,114,58,0.22)",
                       "&:hover": {
-                        border: "1px solid rgba(248,114,58,0.75) !important",
-                        bgcolor: "#fff !important",
-                        boxShadow: "none",
+                        bgcolor: "#E8652F",
+                        boxShadow: "0 8px 22px rgba(248,114,58,0.30)",
+                      },
+                      "&:focus-visible": {
+                        outline: "2px solid rgba(248,114,58,0.55)",
+                        outlineOffset: 2,
                       },
                     }}
                   >
@@ -4270,53 +4268,93 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                   sx={{
                     borderRadius: "14px",
                     border: "1px solid rgba(220,212,202,0.5)",
-                    bgcolor: "rgba(255,253,250,0.95)",
+                    bgcolor: "#ffffff",
                     overflow: "hidden",
+                    boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 24px rgba(18,10,4,0.04)",
+                    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 12px 32px rgba(18,10,4,0.07)",
+                    },
                   }}
                 >
-                  <Box sx={{ px: 2, py: 1.75 }}>
-                    <Typography sx={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: SHELL_MUTED, mb: 0.65 }}>
+                  <Box sx={{ px: 2, pt: 1.5, pb: 1.75 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "0.6875rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: SHELL_PRIMARY,
+                        mb: 1,
+                      }}
+                    >
                       What they{"\u2019"}ll receive
                     </Typography>
-                    {/* Job identity row */}
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.25 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box
+                        aria-hidden
                         sx={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: "50%",
+                          width: 40,
+                          height: 40,
+                          borderRadius: "12px",
                           flexShrink: 0,
                           display: "grid",
                           placeItems: "center",
-                          bgcolor: "rgba(37, 99, 235, 0.08)",
-                          border: "1px solid rgba(37, 99, 235, 0.18)",
+                          color: "#ffffff",
+                          fontWeight: 700,
+                          fontSize: "0.875rem",
+                          letterSpacing: "0.02em",
+                          background:
+                            "linear-gradient(135deg, rgba(248,114,58,1) 0%, rgba(232,90,40,1) 100%)",
+                          boxShadow: "0 4px 10px rgba(248,114,58,0.25)",
                         }}
                       >
-                        <PersonSearchOutlinedIcon sx={{ fontSize: 18, color: "#2563eb" }} />
+                        {(jobTitle || "IC")
+                          .split(/\s+/)
+                          .filter(Boolean)
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontSize: "0.875rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.25, mb: 0.15 }}>
+                        <Typography
+                          sx={{
+                            fontSize: "0.9375rem",
+                            fontWeight: 700,
+                            color: SHELL_INK,
+                            lineHeight: 1.25,
+                            letterSpacing: "-0.01em",
+                            mb: 0.25,
+                          }}
+                        >
                           Ideal {jobTitle || "Candidate"}
                         </Typography>
-                        <Typography sx={{ fontSize: "0.72rem", fontWeight: 450, color: SHELL_MUTED, lineHeight: 1.35 }}>
-                          {[department, domain, experienceRange].filter(Boolean).join(" \u00b7 ")}
+                        <Typography
+                          sx={{
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: SHELL_MUTED,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {[
+                            [department, domain, experienceRange].filter(Boolean).join(" \u00b7 "),
+                            [
+                              workModeLabel && location?.trim()
+                                ? `${workModeLabel} in ${location.trim()}`
+                                : workModeLabel || location?.trim(),
+                              compensationShort,
+                              employmentType,
+                            ]
+                              .filter(Boolean)
+                              .join(" \u00b7 "),
+                          ]
+                            .filter(Boolean)
+                            .join(" \u2022 ")}
                         </Typography>
                       </Box>
-                    </Stack>
-                    {/* Key details chips */}
-                    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", gap: 0.75 }}>
-                      {[
-                        { icon: LanguageRoundedIcon, val: location?.trim() || "Not set" },
-                        { icon: PaymentsOutlinedIcon, val: compensationShort || "Not specified" },
-                        { icon: WorkOutlineRoundedIcon, val: [employmentType, workModeLabel].filter(Boolean).join(" \u00b7 ") || "Not set" },
-                      ].map((f) => (
-                        <Stack key={f.val} direction="row" spacing={0.5} alignItems="center">
-                          <f.icon sx={{ fontSize: 13, color: SHELL_MUTED, opacity: 0.7 }} />
-                          <Typography sx={{ fontSize: "0.72rem", fontWeight: 550, color: SHELL_INK, lineHeight: 1.25 }}>
-                            {f.val}
-                          </Typography>
-                        </Stack>
-                      ))}
                     </Stack>
                   </Box>
 
@@ -4895,7 +4933,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                   fontSize: "0.875rem",
                   px: 2.25,
                   py: 1,
-                  borderColor: "rgba(220,212,202,0.6)",
+                  borderColor: "rgba(200,190,178,0.72)",
                   color: SHELL_MUTED,
                   "&:hover": { borderColor: SHELL_INK, color: SHELL_INK, bgcolor: "rgba(0,0,0,0.02)" },
                 }}
@@ -4963,20 +5001,32 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
         slotProps={{
           backdrop: {
             sx: {
-              backgroundColor: "rgba(29, 26, 23, 0.35)",
-              backdropFilter: "blur(6px)",
+              backgroundColor: "rgba(29, 26, 23, 0.38)",
+              backdropFilter: "blur(8px)",
             },
           },
+          transition: { timeout: { enter: 260, exit: 180 } },
         }}
         PaperProps={{
           elevation: 0,
           sx: {
-            maxWidth: "665px",
-            width: "665px",
-            borderRadius: "20px",
+            maxWidth: "560px",
+            width: "560px",
+            borderRadius: "22px",
             border: "1px solid rgba(220, 212, 202, 0.55)",
-            boxShadow: "0 24px 64px rgba(18, 10, 4, 0.12), 0 0 0 1px rgba(255,255,255,0.8) inset",
-            overflow: "visible",
+            boxShadow:
+              "0 30px 72px rgba(18, 10, 4, 0.14), 0 0 0 1px rgba(255,255,255,0.85) inset",
+            overflow: "hidden",
+            position: "relative",
+            bgcolor: "#ffffff",
+            animation: "careerDialogIn 0.36s cubic-bezier(0.22, 1, 0.36, 1)",
+            "@keyframes careerDialogIn": {
+              from: { opacity: 0, transform: "translateY(8px) scale(0.985)" },
+              to: { opacity: 1, transform: "translateY(0) scale(1)" },
+            },
+            "@media (prefers-reduced-motion: reduce)": {
+              animation: "none",
+            },
           },
         }}
       >
@@ -4987,28 +5037,55 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: 1.5,
-            pb: importExtracting ? { xs: 1.5, sm: 1.75 } : { xs: 2.5, sm: 3.25 },
-            pt: importExtracting ? { xs: 2.25, sm: 2.5 } : { xs: 3, sm: 3.5 },
-            px: { xs: 2.5, sm: 4 },
+            pb: importExtracting ? { xs: 1.5, sm: 1.75 } : { xs: 2.5, sm: 3 },
+            pt: { xs: 2.5, sm: 3 },
+            px: { xs: 2.5, sm: 3.5 },
+            position: "relative",
           }}
         >
-          <Box sx={{ minWidth: 0, pr: 1 }}>
-            <Typography
-              component="span"
+          <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ minWidth: 0, pr: 1 }}>
+            <Box
+              aria-hidden
               sx={{
-                ...type.pageH1,
-                display: "block",
-                mb: importExtracting ? 0 : 1,
+                width: 36,
+                height: 36,
+                borderRadius: "11px",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                color: SHELL_PRIMARY,
+                background:
+                  "linear-gradient(135deg, rgba(248,114,58,0.16) 0%, rgba(248,114,58,0.06) 100%)",
+                border: "1px solid rgba(248,114,58,0.18)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                animation: "careerBadgeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both",
+                "@keyframes careerBadgeIn": {
+                  from: { opacity: 0, transform: "translateY(-4px) scale(0.9)" },
+                  to: { opacity: 1, transform: "translateY(0) scale(1)" },
+                },
+                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               }}
             >
-              Import from career page
-            </Typography>
-            {!importExtracting ? (
-              <Typography sx={{ ...type.lead, fontSize: "0.8125rem", lineHeight: 1.55 }}>
-                Paste a public job posting URL. We extract the description and structured fields for you to review.
+              <LanguageRoundedIcon sx={{ fontSize: 19 }} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                component="span"
+                sx={{
+                  ...type.pageH1,
+                  display: "block",
+                  mb: importExtracting ? 0 : 0.5,
+                }}
+              >
+                Import from career page
               </Typography>
-            ) : null}
-          </Box>
+              {!importExtracting ? (
+                <Typography sx={{ ...type.lead, fontSize: "0.8125rem", lineHeight: 1.55, mt: 0.25 }}>
+                  Paste a public job URL. We extract everything for your review.
+                </Typography>
+              ) : null}
+            </Box>
+          </Stack>
           <IconButton
             aria-label="Close"
             onClick={() => {
@@ -5019,70 +5096,103 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             size="small"
             sx={{
               color: SHELL_MUTED,
-              mt: -0.5,
-              "&:hover": { bgcolor: "rgba(0,0,0,0.05)", color: SHELL_INK },
+              mt: -0.25,
+              transition: "transform 0.18s ease, background-color 0.18s ease, color 0.18s ease",
+              "&:hover": {
+                bgcolor: "rgba(0,0,0,0.05)",
+                color: SHELL_INK,
+                transform: "rotate(90deg)",
+              },
             }}
           >
-            <CloseRoundedIcon sx={{ fontSize: 22 }} />
+            <CloseRoundedIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </DialogTitle>
         <DialogContent
           sx={{
-            px: { xs: 2.5, sm: 4 },
-            pb: importExtracting ? { xs: 2.25, sm: 2.5 } : { xs: 3, sm: 3.5 },
-            pt: importExtracting ? { xs: 1.5, sm: 1.75 } : { xs: 3.25, sm: 3.75 },
+            px: { xs: 2.5, sm: 3.5 },
+            pb: importExtracting ? { xs: 3, sm: 3.25 } : { xs: 2.75, sm: 3.25 },
+            pt: importExtracting ? { xs: 2.25, sm: 2.5 } : { xs: 2.25, sm: 2.75 },
             overflow: "visible",
+            position: "relative",
           }}
         >
           {!importExtracting ? (
-            <Stack spacing={2.5}>
-              <TextField
-                label="Job posting URL"
-                placeholder="https://careers.example.com/jobs/role-id"
-                value={careerPageUrl}
-                onChange={(e) => {
-                  setCareerPageUrl(e.target.value);
-                  setCareerTouched(false);
-                }}
-                error={careerTouched && !isPlausibleUrl(careerPageUrl)}
-                helperText={
-                  careerTouched && !isPlausibleUrl(careerPageUrl)
-                    ? "Enter a valid URL (http:// or https://)."
-                    : undefined
-                }
-                fullWidth
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LanguageRoundedIcon sx={{ fontSize: 20, color: SHELL_MUTED }} />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-                sx={fieldSx}
-              />
-
-              <Stack direction="row" justifyContent="flex-end">
-                <Button
-                  variant="contained"
-                  onClick={handleContinueCareerImport}
-                  disabled={!careerPageUrl.trim()}
-                  sx={{
-                    px: 3,
-                    py: 1.15,
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                    fontSize: "0.875rem",
-                    textTransform: "none",
-                    boxShadow: "0 8px 20px rgba(248, 114, 58, 0.22)",
-                    minWidth: 148,
+            <Box
+              sx={{
+                animation: "careerContentIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both",
+                "@keyframes careerContentIn": {
+                  from: { opacity: 0, transform: "translateY(6px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
+                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+              }}
+            >
+              <Stack spacing={2.75}>
+                <TextField
+                  label="Job posting URL"
+                  placeholder="https://careers.example.com/jobs/role-id"
+                  value={careerPageUrl}
+                  onChange={(e) => {
+                    setCareerPageUrl(e.target.value);
+                    setCareerTouched(false);
                   }}
-                >
-                  Extract details
-                </Button>
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && careerPageUrl.trim()) {
+                      e.preventDefault();
+                      handleContinueCareerImport();
+                    }
+                  }}
+                  error={careerTouched && !isPlausibleUrl(careerPageUrl)}
+                  helperText={
+                    careerTouched && !isPlausibleUrl(careerPageUrl)
+                      ? "Enter a valid URL (http:// or https://)."
+                      : undefined
+                  }
+                  fullWidth
+                  autoFocus
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LinkRoundedIcon sx={{ fontSize: 19, color: SHELL_MUTED }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                  sx={fieldSx}
+                />
+
+                <Stack direction="row" justifyContent="flex-end" alignItems="center" sx={{ width: "100%", pt: 0.25 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleContinueCareerImport}
+                    disabled={!careerPageUrl.trim()}
+                    endIcon={<AutoFixHighOutlinedIcon sx={{ fontSize: "17px !important" }} />}
+                    sx={{
+                      px: 2.5,
+                      py: 1,
+                      borderRadius: "10px",
+                      fontWeight: 700,
+                      fontSize: "0.875rem",
+                      textTransform: "none",
+                      boxShadow: "0 8px 20px rgba(248, 114, 58, 0.22)",
+                      minWidth: 148,
+                      transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                      "&:hover": {
+                        transform: "translateY(-1px)",
+                        boxShadow: "0 10px 24px rgba(248, 114, 58, 0.28)",
+                      },
+                      "&.Mui-disabled": {
+                        boxShadow: "none",
+                      },
+                    }}
+                  >
+                    Extract details
+                  </Button>
+                </Stack>
               </Stack>
-            </Stack>
+            </Box>
           ) : null}
 
           {importExtracting ? (
@@ -5090,77 +5200,178 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               sx={{
                 position: "relative",
                 textAlign: "center",
+                px: { xs: 0.5, sm: 1 },
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  color: SHELL_MUTED,
-                  mb: 0.75,
-                }}
-              >
-                Step {importStepIndex + 1} of {IMPORT_EXTRACTION_STEPS.length}
-              </Typography>
-              <CircularProgress
+              <Box
                 aria-hidden
-                size={22}
-                thickness={4}
                 sx={{
-                  display: "block",
+                  width: 58,
+                  height: 58,
+                  borderRadius: "18px",
                   mx: "auto",
-                  mb: 1,
+                  mb: 2,
+                  display: "grid",
+                  placeItems: "center",
                   color: SHELL_PRIMARY,
-                  animationDuration: "2.75s",
-                  "& .MuiCircularProgress-circle": {
-                    animationDuration: "2.75s",
+                  background:
+                    "linear-gradient(135deg, rgba(248,114,58,0.18) 0%, rgba(248,114,58,0.06) 100%)",
+                  border: "1px solid rgba(248,114,58,0.22)",
+                  position: "relative",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+                  animation: "careerHeroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+                  "@keyframes careerHeroIn": {
+                    from: { opacity: 0, transform: "scale(0.88)" },
+                    to: { opacity: 1, transform: "scale(1)" },
+                  },
+                  "&::before, &::after": {
+                    content: '""',
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "inherit",
+                    border: "1px solid rgba(248,114,58,0.3)",
+                    pointerEvents: "none",
+                  },
+                  "&::before": {
+                    animation: "careerHeroPulse 2.4s ease-out infinite",
+                  },
+                  "&::after": {
+                    animation: "careerHeroPulse 2.4s ease-out 1.2s infinite",
+                  },
+                  "@keyframes careerHeroPulse": {
+                    "0%": { opacity: 0.7, transform: "scale(1)" },
+                    "100%": { opacity: 0, transform: "scale(1.35)" },
+                  },
+                  "@media (prefers-reduced-motion: reduce)": {
+                    animation: "none",
+                    "&::before, &::after": { display: "none" },
                   },
                 }}
-              />
+              >
+                <LanguageRoundedIcon
+                  sx={{
+                    fontSize: 26,
+                    animation: "careerHeroSpin 6s linear infinite",
+                    "@keyframes careerHeroSpin": {
+                      from: { transform: "rotate(0deg)" },
+                      to: { transform: "rotate(360deg)" },
+                    },
+                    "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+                  }}
+                />
+              </Box>
+
+              <Stack
+                direction="row"
+                spacing={0.75}
+                justifyContent="center"
+                sx={{ mb: 1.75 }}
+                aria-hidden
+              >
+                {IMPORT_EXTRACTION_STEPS.map((_, i) => {
+                  const isDone = i < importStepIndex;
+                  const isActive = i === importStepIndex;
+                  return (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: isActive ? 24 : 8,
+                        height: 8,
+                        borderRadius: 999,
+                        bgcolor: isDone || isActive ? SHELL_PRIMARY : "rgba(220,212,202,0.85)",
+                        opacity: isDone ? 0.55 : 1,
+                        transition:
+                          "width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease, opacity 0.3s ease",
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "center",
-                  minHeight: 44,
-                  mb: 1.5,
+                  minHeight: 56,
+                  mb: 2,
                 }}
               >
                 <SwitchTransition mode="out-in">
-                  <Fade key={importStepIndex} timeout={340} unmountOnExit>
-                    <Typography
-                      component="div"
-                      aria-live="polite"
-                      aria-atomic="true"
-                      sx={{
-                        fontSize: "0.9375rem",
-                        lineHeight: 1.45,
-                        fontWeight: 600,
-                        color: SHELL_INK,
-                        textAlign: "center",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      {IMPORT_EXTRACTION_STEPS[importStepIndex]}
-                    </Typography>
+                  <Fade key={importStepIndex} timeout={300} unmountOnExit>
+                    <Stack spacing={0.5} alignItems="center" sx={{ maxWidth: 420 }}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.6875rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          color: SHELL_MUTED,
+                        }}
+                      >
+                        Step {importStepIndex + 1} of {IMPORT_EXTRACTION_STEPS.length}
+                      </Typography>
+                      <Typography
+                        component="div"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        sx={{
+                          fontSize: "1rem",
+                          lineHeight: 1.45,
+                          fontWeight: 700,
+                          color: SHELL_INK,
+                          letterSpacing: "-0.01em",
+                          textAlign: "center",
+                        }}
+                      >
+                        {IMPORT_EXTRACTION_STEPS[importStepIndex]}
+                      </Typography>
+                    </Stack>
                   </Fade>
                 </SwitchTransition>
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={((importStepIndex + 1) / IMPORT_EXTRACTION_STEPS.length) * 100}
+
+              <Box
                 sx={{
-                  height: 5,
-                  borderRadius: 4,
-                  bgcolor: "rgba(248, 114, 58, 0.1)",
-                  "& .MuiLinearProgress-bar": {
-                    borderRadius: 4,
-                    bgcolor: SHELL_PRIMARY,
-                    transition: "transform 0.55s ease",
-                  },
+                  position: "relative",
+                  height: 4,
+                  borderRadius: 999,
+                  bgcolor: "rgba(220,212,202,0.55)",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: `${((importStepIndex + 1) / IMPORT_EXTRACTION_STEPS.length) * 100}%`,
+                    borderRadius: 999,
+                    background:
+                      "linear-gradient(90deg, rgba(248,114,58,0.85), rgba(248,114,58,1))",
+                    transition: "width 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+                    overflow: "hidden",
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      width: 72,
+                      transform: "translateX(-100%)",
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)",
+                      animation: "careerShimmer 1.6s linear infinite",
+                    },
+                    "@keyframes careerShimmer": {
+                      "0%": { transform: "translateX(-100%)" },
+                      "100%": { transform: "translateX(520%)" },
+                    },
+                    "@media (prefers-reduced-motion: reduce)": {
+                      "&::after": { display: "none" },
+                    },
+                  }}
+                />
+              </Box>
             </Box>
           ) : null}
         </DialogContent>

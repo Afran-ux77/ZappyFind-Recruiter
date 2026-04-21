@@ -1989,26 +1989,7 @@ function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, 
   );
 }
 
-const ICP_INSIGHTS = {
-  7: {
-    type: "success",
-    headline: "The Ideal Candidate Profile you aligned on with your hiring manager is working well",
-    body: "Top matches are strong in Empathy and Communication, with a 76% outreach reply rate. Your current candidate profile is working well.",
-  },
-  4: {
-    type: "warning",
-    headline: "Two competencies are filtering out strong candidates",
-    body: "Strategy and Growth Forecasting are your tightest gates. Strong candidates often clear Analytics, Experimentation Design, and Channel Performance, then stall on these two. Easing them could add roughly 40% more qualified matches without dropping your other must-haves.",
-    removeSuggestions: ["Strategy", "Growth Forecasting"],
-    ctaLabel: "Refine Candidate Profile",
-  },
-  3: {
-    type: "refine",
-    headline: "Collaboration and Execution are limiting match strength",
-    body: "Most candidates score well on Technical Depth, System Design, and Code Quality but fall short on Collaboration and Execution. Removing these from required competencies could move several 80-84% candidates into the 90%+ range.",
-    removeSuggestions: ["Collaboration", "Execution"],
-  },
-};
+const ICP_INSIGHTS = {};
 
 function IcpInsightBlock({ job, competencies = [] }) {
   const insight = ICP_INSIGHTS[job.id];
