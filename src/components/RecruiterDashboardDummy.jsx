@@ -89,6 +89,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import CircleOutlinedIcon from "@mui/icons-material/CircleOutlined";
+import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import RecruiterAppShell, {
   SHELL_INK,
   SHELL_MUTED,
@@ -269,6 +270,32 @@ const CANDIDATE_UNLOCKED_STATUSES = [
 ];
 const CANDIDATE_STATUS_MAP = Object.fromEntries(CANDIDATE_UNLOCKED_STATUSES.map((s) => [s.id, s]));
 const DEFAULT_CANDIDATE_STATUS = "new";
+
+const CURRENT_RECRUITER = { name: "Alex", role: "Hiring lead", initial: "A" };
+
+function formatRelativeTime(ms) {
+  if (!ms) return "";
+  const diff = Math.max(0, Date.now() - ms);
+  if (diff < 60_000) return "Just now";
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatAbsoluteTime(ms) {
+  if (!ms) return "";
+  return new Date(ms).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function JobClosedDetailsTooltip({ job }) {
   return (
@@ -1788,6 +1815,198 @@ function CandidateStatusPill({ status, onChange, candidateName }) {
   );
 }
 
+function CandidateCommentDialog({ open, candidate, onClose, onSubmit }) {
+  const [text, setText] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) {
+      setText("");
+      return undefined;
+    }
+    const t = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  if (!open || !candidate) return null;
+
+  const trimmed = text.trim();
+  const canSubmit = trimmed.length > 0;
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    onSubmit?.(trimmed);
+    onClose?.();
+  };
+
+  const fullName = `${candidate.firstName} ${candidate.lastName}`;
+
+  return (
+    <>
+      <Box
+        onClick={onClose}
+        sx={{
+          position: "fixed",
+          inset: 0,
+          bgcolor: "rgba(18,10,4,0.38)",
+          backdropFilter: "blur(2px)",
+          zIndex: 2100,
+          animation: "commentFadeIn 160ms ease-out both",
+          "@keyframes commentFadeIn": {
+            from: { opacity: 0 },
+            to: { opacity: 1 },
+          },
+        }}
+      />
+      <Box
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="candidate-comment-title"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        sx={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(520px, calc(100vw - 32px))",
+          maxHeight: "calc(100vh - 48px)",
+          bgcolor: "#fff",
+          borderRadius: "18px",
+          border: "1px solid rgba(220,212,202,0.6)",
+          boxShadow: "0 28px 64px rgba(18,10,4,0.22), 0 6px 16px rgba(18,10,4,0.08)",
+          zIndex: 2101,
+          p: { xs: 2, sm: 2.5 },
+          animation: "commentPopIn 220ms cubic-bezier(.22,1,.36,1) both",
+          "@keyframes commentPopIn": {
+            from: { opacity: 0, transform: "translate(-50%, -50%) scale(0.96)" },
+            to: { opacity: 1, transform: "translate(-50%, -50%) scale(1)" },
+          },
+        }}
+      >
+        <Stack spacing={1.75}>
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+            <Stack direction="row" alignItems="center" spacing={1.25}>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "12px",
+                  display: "grid",
+                  placeItems: "center",
+                  bgcolor: "rgba(248,114,58,0.12)",
+                  border: "1px solid rgba(248,114,58,0.28)",
+                  flexShrink: 0,
+                }}
+              >
+                <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY }} aria-hidden />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  id="candidate-comment-title"
+                  sx={{ fontSize: "1rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.01em", lineHeight: 1.25 }}
+                >
+                  Add a comment
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.8125rem",
+                    color: SHELL_MUTED,
+                    fontWeight: 600,
+                    mt: 0.2,
+                    lineHeight: 1.35,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {fullName} · {candidate.role}
+                </Typography>
+              </Box>
+            </Stack>
+            <IconButton
+              size="small"
+              aria-label="Close add comment"
+              onClick={onClose}
+              sx={{
+                color: SHELL_MUTED,
+                borderRadius: "10px",
+                "&:hover": { color: SHELL_INK, bgcolor: "rgba(23,18,14,0.05)" },
+              }}
+            >
+              <CloseOutlinedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Stack>
+
+          <TextField
+            inputRef={inputRef}
+            multiline
+            minRows={4}
+            maxRows={9}
+            fullWidth
+            placeholder="Share notes on this candidate, next steps, or why they stand out..."
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 500))}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+                bgcolor: "#fff",
+                alignItems: "flex-start",
+                p: 1.25,
+                fontSize: "0.9rem",
+                lineHeight: 1.55,
+              },
+              "& .MuiOutlinedInput-input": { p: 0 },
+            }}
+          />
+
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, fontWeight: 500 }}>
+              {text.length}/500
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="text"
+                onClick={onClose}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: SHELL_MUTED,
+                  borderRadius: "10px",
+                  "&:hover": { color: SHELL_INK, bgcolor: "rgba(23,18,14,0.05)" },
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  boxShadow: "0 8px 22px rgba(248,114,58,0.28)",
+                  "&:hover": { boxShadow: "0 10px 26px rgba(248,114,58,0.34)" },
+                }}
+              >
+                Add comment
+              </Button>
+            </Stack>
+          </Stack>
+        </Stack>
+      </Box>
+    </>
+  );
+}
+
 function CandidateCard({
   candidate,
   isUnlocked,
@@ -1799,11 +2018,27 @@ function CandidateCard({
   status,
   onChangeStatus,
   showPipelineStatus = false,
+  onRequestAddComment,
 }) {
   const locked = candidate.locked && !isUnlocked;
   const matchColor = getMatchColor(candidate.matchScore);
   const matchLabel = getMatchLabel(candidate.matchScore);
   const [copiedContactField, setCopiedContactField] = useState(null);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
+  const moreMenuOpen = Boolean(moreMenuAnchor);
+  /** Play a brief celebratory animation the first time a card transitions from locked -> unlocked. */
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const prevLockedRef = useRef(locked);
+  useEffect(() => {
+    if (prevLockedRef.current && !locked) {
+      setIsUnlocking(true);
+      const timer = window.setTimeout(() => setIsUnlocking(false), 1800);
+      prevLockedRef.current = locked;
+      return () => window.clearTimeout(timer);
+    }
+    prevLockedRef.current = locked;
+    return undefined;
+  }, [locked]);
   const appliedAtLabel = candidate.appliedAt || "Apr 11, 2026, 10:30 AM";
   const alsoAppliedAsRecommended = candidate.source === "recommended" && candidate.alsoAppliedToJob;
   const isAppliedSource = candidate.source === "applied";
@@ -1833,36 +2068,184 @@ function CandidateCard({
   return (
     <Box
       sx={{
-        borderRadius: "16px",
-        border: "1px solid rgba(220,212,202,0.48)",
-        bgcolor: "#fff",
-        p: { xs: 2, md: 2.5 },
-        transition: "all 0.22s cubic-bezier(.4,0,.2,1)",
-        animation: `fadeSlideIn 0.35s ease ${index * 0.06}s both`,
-        "@keyframes fadeSlideIn": {
+        animation: `cardFadeSlideIn 0.4s cubic-bezier(.22,1,.36,1) ${index * 0.06}s both`,
+        "@keyframes cardFadeSlideIn": {
           from: { opacity: 0, transform: "translateY(12px)" },
           to: { opacity: 1, transform: "translateY(0)" },
         },
-        "&:hover": {
-          borderColor: "rgba(220,212,202,0.7)",
-          boxShadow: "0 6px 24px rgba(18,10,4,0.06), 0 1.5px 4px rgba(18,10,4,0.03)",
+        "@media (prefers-reduced-motion: reduce)": {
+          animation: "none",
+          opacity: 1,
         },
       }}
     >
+    <Box
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: "16px",
+        border: "1.5px solid",
+        borderColor: isUnlocking ? "rgba(248,114,58,0.55)" : "rgba(220,212,202,0.48)",
+        bgcolor: "#fff",
+        p: { xs: 2, md: 2.5 },
+        transformOrigin: "center center",
+        willChange: "transform, box-shadow, filter",
+        transform: isUnlocking
+          ? "translate3d(0, -6px, 0) scale(1.018)"
+          : "translate3d(0, 0, 0) scale(1)",
+        boxShadow: isUnlocking
+          ? "0 0 0 6px rgba(248,114,58,0.12), 0 34px 72px -12px rgba(248,114,58,0.32), 0 10px 24px -6px rgba(18,10,4,0.1)"
+          : "0 0 0 0 rgba(248,114,58,0), 0 0 0 rgba(18,10,4,0)",
+        transition: isUnlocking
+          ? "transform 720ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 760ms cubic-bezier(0.16, 1, 0.3, 1), border-color 520ms cubic-bezier(0.23, 1, 0.32, 1)"
+          : "transform 920ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 880ms cubic-bezier(0.23, 1, 0.32, 1), border-color 720ms cubic-bezier(0.23, 1, 0.32, 1)",
+        "@keyframes unlockShineSweep": {
+          "0%": {
+            transform: "translateX(-55%) skewX(-14deg)",
+            opacity: 0,
+          },
+          "12%": { opacity: 1 },
+          "88%": { opacity: 1 },
+          "100%": {
+            transform: "translateX(285%) skewX(-14deg)",
+            opacity: 0,
+          },
+        },
+        "@keyframes unlockRadialWarmth": {
+          "0%": { transform: "scale(0.55)", opacity: 0 },
+          "30%": { transform: "scale(1)", opacity: 1 },
+          "100%": { transform: "scale(1.45)", opacity: 0 },
+        },
+        "@keyframes unlockScorePop": {
+          "0%": { transform: "scale(1)" },
+          "32%": { transform: "scale(1.09)" },
+          "62%": { transform: "scale(0.985)" },
+          "100%": { transform: "scale(1)" },
+        },
+        "@keyframes unlockContentIn": {
+          "0%": {
+            opacity: 0,
+            transform: "translate3d(0, 10px, 0)",
+            filter: "blur(5px)",
+          },
+          "55%": {
+            opacity: 1,
+            filter: "blur(0.5px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translate3d(0, 0, 0)",
+            filter: "blur(0)",
+          },
+        },
+        "@keyframes unlockBurst": {
+          "0%": { transform: "scale(0.35)", opacity: 0.9 },
+          "55%": { transform: "scale(1.2)", opacity: 0.35 },
+          "100%": { transform: "scale(1.75)", opacity: 0 },
+        },
+        "&:hover": {
+          borderColor: isUnlocking ? undefined : "rgba(220,212,202,0.7)",
+          boxShadow: isUnlocking
+            ? undefined
+            : "0 6px 24px rgba(18,10,4,0.06), 0 1.5px 4px rgba(18,10,4,0.03)",
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          transition: "opacity 320ms ease",
+          transform: "none",
+          boxShadow: "none",
+          borderColor: "rgba(220,212,202,0.48)",
+        },
+      }}
+    >
+      {isUnlocking && (
+        <Box
+          aria-hidden
+          sx={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            borderRadius: "inherit",
+            zIndex: 1,
+            "@media (prefers-reduced-motion: reduce)": { display: "none" },
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              left: { xs: 28, md: 42 },
+              top: "50%",
+              width: 320,
+              height: 320,
+              marginTop: "-160px",
+              marginLeft: "-160px",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(255,180,140,0.28) 0%, rgba(248,114,58,0.12) 42%, rgba(248,114,58,0) 72%)",
+              animation:
+                "unlockRadialWarmth 1400ms cubic-bezier(0.23, 1, 0.32, 1) 40ms both",
+              willChange: "transform, opacity",
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              top: -60,
+              bottom: -60,
+              left: "-45%",
+              width: "62%",
+              background:
+                "linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,233,215,0.42) 32%, rgba(248,140,90,0.48) 50%, rgba(255,233,215,0.42) 68%, rgba(255,255,255,0) 100%)",
+              filter: "blur(3px)",
+              animation:
+                "unlockShineSweep 1600ms cubic-bezier(0.23, 1, 0.32, 1) 180ms both",
+              willChange: "transform, opacity",
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              left: { xs: 28, md: 42 },
+              top: "50%",
+              width: 96,
+              height: 96,
+              marginTop: "-48px",
+              marginLeft: "-48px",
+              borderRadius: "50%",
+              border: "1.5px solid rgba(248,114,58,0.55)",
+              boxShadow:
+                "0 0 0 10px rgba(248,114,58,0.08), inset 0 0 22px rgba(248,114,58,0.10)",
+              animation:
+                "unlockBurst 1100ms cubic-bezier(0.23, 1, 0.32, 1) 80ms both",
+              willChange: "transform, opacity",
+            }}
+          />
+        </Box>
+      )}
       <Stack
         direction="row"
         spacing={2}
         alignItems="center"
         flexWrap="wrap"
         useFlexGap
-        sx={{ columnGap: 2, rowGap: 1.5 }}
+        sx={{ columnGap: 2, rowGap: 1.5, position: "relative", zIndex: 2 }}
       >
         <Tooltip
           title={`${candidate.matchScore}% - ${matchLabel}`}
           arrow
           placement="top"
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              transformOrigin: "center",
+              animation: isUnlocking
+                ? "unlockScorePop 820ms cubic-bezier(0.23, 1, 0.32, 1) 180ms both"
+                : "none",
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
             <ScoreGauge score={candidate.matchScore} />
           </Box>
         </Tooltip>
@@ -1880,6 +2263,12 @@ function CandidateCard({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  transition: "color 0.3s ease, letter-spacing 0.3s ease",
+                  animation: isUnlocking && !locked
+                    ? "unlockContentIn 720ms cubic-bezier(0.16, 1, 0.3, 1) 140ms both"
+                    : "none",
+                  willChange: isUnlocking ? "transform, opacity, filter" : "auto",
+                  "@media (prefers-reduced-motion: reduce)": { animation: "none" },
                 }}
               >
                 {displayName}
@@ -1980,7 +2369,19 @@ function CandidateCard({
               )}
             </Stack>
           </Stack>
-          <Typography sx={{ fontSize: "0.8125rem", fontWeight: 500, color: SHELL_MUTED, mb: 0.15 }}>
+          <Typography
+            sx={{
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: SHELL_MUTED,
+              mb: 0.15,
+              animation: isUnlocking && !locked
+                ? "unlockContentIn 720ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both"
+                : "none",
+              willChange: isUnlocking ? "transform, opacity, filter" : "auto",
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
             {roleLabel}
           </Typography>
           <Stack
@@ -2000,7 +2401,7 @@ function CandidateCard({
         {/* Right side: contact (copy per field) + CTAs */}
         <Stack
           direction="row"
-          spacing={1.25}
+          spacing={1}
           alignItems="flex-start"
           flexWrap="wrap"
           useFlexGap
@@ -2008,9 +2409,24 @@ function CandidateCard({
             flex: { xs: "1 1 100%", md: "0 0 auto" },
             alignSelf: "flex-start",
             rowGap: 1,
-            columnGap: 1.25,
+            columnGap: 1,
             justifyContent: { xs: "flex-start", md: "flex-end" },
-            maxWidth: { xs: "100%", md: 640 },
+            maxWidth: { xs: "100%", md: 720 },
+            ...(isUnlocking && !locked && {
+              "& > *": {
+                animation:
+                  "unlockContentIn 720ms cubic-bezier(0.16, 1, 0.3, 1) both",
+                willChange: "transform, opacity, filter",
+              },
+              "& > *:nth-of-type(1)": { animationDelay: "260ms" },
+              "& > *:nth-of-type(2)": { animationDelay: "320ms" },
+              "& > *:nth-of-type(3)": { animationDelay: "380ms" },
+              "& > *:nth-of-type(4)": { animationDelay: "440ms" },
+              "& > *:nth-of-type(5)": { animationDelay: "500ms" },
+              "@media (prefers-reduced-motion: reduce)": {
+                "& > *": { animation: "none" },
+              },
+            }),
           }}
         >
           {locked ? (
@@ -2076,7 +2492,7 @@ function CandidateCard({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 0.75,
-                    maxWidth: { xs: "100%", sm: 220 },
+                    maxWidth: { xs: "100%", sm: 180 },
                     minHeight: 36,
                     height: 36,
                     px: 1.5,
@@ -2208,6 +2624,90 @@ function CandidateCard({
               >
                 View Details
               </Button>
+              {onRequestAddComment && (
+                <Tooltip title="More options" arrow>
+                  <IconButton
+                    size="small"
+                    aria-label={`More options for ${starNameRef}`}
+                    aria-haspopup="menu"
+                    aria-expanded={moreMenuOpen}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMoreMenuAnchor(e.currentTarget);
+                    }}
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      flexShrink: 0,
+                      color: SHELL_MUTED,
+                      border: `1px solid ${SHELL_PRIMARY}22`,
+                      borderRadius: "10px",
+                      bgcolor: "transparent",
+                      "&:hover": {
+                        color: SHELL_INK,
+                        bgcolor: "rgba(23,18,14,0.05)",
+                        borderColor: `${SHELL_PRIMARY}44`,
+                      },
+                      ...(moreMenuOpen && {
+                        color: SHELL_INK,
+                        bgcolor: "rgba(23,18,14,0.06)",
+                        borderColor: `${SHELL_PRIMARY}44`,
+                      }),
+                    }}
+                  >
+                    <MoreVertOutlinedIcon sx={{ fontSize: 19 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Menu
+                anchorEl={moreMenuAnchor}
+                open={moreMenuOpen}
+                onClose={() => setMoreMenuAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                sx={{ zIndex: 2000 }}
+                slotProps={{
+                  root: { sx: { zIndex: 2000 } },
+                  paper: {
+                    sx: {
+                      zIndex: 2000,
+                      mt: 0.75,
+                      borderRadius: "12px",
+                      minWidth: 200,
+                      border: "1px solid rgba(220,212,202,0.55)",
+                      boxShadow: "0 16px 38px rgba(18,10,4,0.14), 0 3px 10px rgba(18,10,4,0.06)",
+                      overflow: "hidden",
+                      "& .MuiList-root": { py: 0.5 },
+                    },
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMoreMenuAnchor(null);
+                    onRequestAddComment?.(candidate);
+                  }}
+                  sx={{
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                    color: SHELL_INK,
+                    gap: 1.1,
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: "8px",
+                    mx: 0.5,
+                    "&:hover": { bgcolor: "rgba(248,114,58,0.08)", color: SHELL_PRIMARY },
+                  }}
+                >
+                  <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                  Add Comment
+                </MenuItem>
+              </Menu>
             </>
           )}
         </Stack>
@@ -2220,6 +2720,7 @@ function CandidateCard({
         wrapperSx={{ mt: 2 }}
       />
 
+    </Box>
     </Box>
   );
 }
@@ -2626,6 +3127,8 @@ function CandidateDetailDialog({
   hasNext,
   unlockedIds,
   onUnlockCandidate,
+  comments = [],
+  onRequestAddComment,
 }) {
   const [detailTab, setDetailTab] = useState(0);
   const [playingInterviewId, setPlayingInterviewId] = useState(null);
@@ -4614,6 +5117,164 @@ function CandidateDetailDialog({
                     )}
                   </Stack>
                 )}
+
+                <Box
+                  sx={{
+                    mt: 2,
+                    borderRadius: "16px",
+                    border: "1px solid rgba(220,212,202,0.5)",
+                    bgcolor: "rgba(255,255,255,0.92)",
+                    p: { xs: 1.75, sm: 2.25 },
+                  }}
+                >
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    alignItems={{ xs: "flex-start", sm: "center" }}
+                    justifyContent="space-between"
+                    spacing={1.25}
+                    sx={{ mb: comments.length > 0 ? 1.5 : 1.25 }}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1.25}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "11px",
+                          display: "grid",
+                          placeItems: "center",
+                          bgcolor: "rgba(248,114,58,0.1)",
+                          border: "1px solid rgba(248,114,58,0.26)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY }} aria-hidden />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: "0.95rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.25 }}>
+                          Comments
+                        </Typography>
+                        <Typography sx={{ fontSize: "0.7rem", color: SHELL_MUTED, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", mt: 0.2 }}>
+                          {comments.length === 0 ? "No notes yet" : `${comments.length} ${comments.length === 1 ? "note" : "notes"} from your team`}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddOutlinedIcon sx={{ fontSize: "15px !important" }} />}
+                      onClick={() => onRequestAddComment?.(candidate)}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        fontSize: "0.8125rem",
+                        borderRadius: "10px",
+                        px: 1.75,
+                        minHeight: 34,
+                        height: 34,
+                        color: SHELL_PRIMARY,
+                        borderColor: `${SHELL_PRIMARY}44`,
+                        alignSelf: { xs: "stretch", sm: "center" },
+                        "&:hover": { borderColor: SHELL_PRIMARY, bgcolor: "rgba(248,114,58,0.045)" },
+                      }}
+                    >
+                      Add comment
+                    </Button>
+                  </Stack>
+
+                  {comments.length === 0 ? (
+                    <Box
+                      sx={{
+                        py: 2.25,
+                        px: 2,
+                        textAlign: "center",
+                        borderRadius: "12px",
+                        bgcolor: "rgba(248,246,243,0.6)",
+                        border: "1px dashed rgba(220,212,202,0.7)",
+                      }}
+                    >
+                      <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK }}>
+                        No comments yet
+                      </Typography>
+                      <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.35, lineHeight: 1.5 }}>
+                        Add the first note so your team can follow along.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Stack spacing={1}>
+                      {comments.map((c) => (
+                        <Box
+                          key={c.id}
+                          sx={{
+                            borderRadius: "12px",
+                            border: "1px solid rgba(220,212,202,0.5)",
+                            bgcolor: "#fff",
+                            p: 1.5,
+                            transition: "border-color 0.18s ease, box-shadow 0.18s ease",
+                            "&:hover": { borderColor: "rgba(220,212,202,0.85)", boxShadow: "0 4px 14px rgba(18,10,4,0.04)" },
+                          }}
+                        >
+                          <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                            <Box
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                flexShrink: 0,
+                                borderRadius: "50%",
+                                bgcolor: "rgba(248,114,58,0.14)",
+                                color: "#B8481A",
+                                display: "grid",
+                                placeItems: "center",
+                                fontWeight: 800,
+                                fontSize: "0.8125rem",
+                                letterSpacing: "-0.01em",
+                              }}
+                              aria-hidden
+                            >
+                              {c.authorInitial || (c.authorName ? c.authorName.charAt(0).toUpperCase() : "?")}
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Stack direction="row" alignItems="baseline" spacing={0.75} flexWrap="wrap" rowGap={0.2}>
+                                <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.3 }}>
+                                  {c.authorName}
+                                </Typography>
+                                {c.authorRole && (
+                                  <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, fontWeight: 600, lineHeight: 1.3 }}>
+                                    · {c.authorRole}
+                                  </Typography>
+                                )}
+                                <Tooltip title={formatAbsoluteTime(c.createdAt)} arrow placement="top">
+                                  <Typography
+                                    sx={{
+                                      fontSize: "0.72rem",
+                                      color: SHELL_MUTED,
+                                      fontWeight: 600,
+                                      lineHeight: 1.3,
+                                      cursor: "default",
+                                    }}
+                                  >
+                                    · {formatRelativeTime(c.createdAt)}
+                                  </Typography>
+                                </Tooltip>
+                              </Stack>
+                              <Typography
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  color: "rgba(23,18,14,0.88)",
+                                  lineHeight: 1.55,
+                                  mt: 0.45,
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {c.text}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
               </>
             )}
           </Box>
@@ -4674,6 +5335,32 @@ function CandidateMatchView({ job, onBack }) {
   const [jobActionsMenuAnchor, setJobActionsMenuAnchor] = useState(null);
   const [detailCandidate, setDetailCandidate] = useState(null);
   const [starredIds, setStarredIds] = useState(new Set());
+  const [commentsByCandidateId, setCommentsByCandidateId] = useState({});
+  const [commentDialogCandidate, setCommentDialogCandidate] = useState(null);
+
+  const openCommentDialog = useCallback((candidate) => {
+    setCommentDialogCandidate(candidate);
+  }, []);
+  const closeCommentDialog = useCallback(() => {
+    setCommentDialogCandidate(null);
+  }, []);
+  const handleAddComment = useCallback((candidateId, text) => {
+    if (!candidateId || !text) return;
+    setCommentsByCandidateId((prev) => {
+      const entry = {
+        id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        text,
+        authorName: CURRENT_RECRUITER.name,
+        authorRole: CURRENT_RECRUITER.role,
+        authorInitial: CURRENT_RECRUITER.initial,
+        createdAt: Date.now(),
+      };
+      return {
+        ...prev,
+        [candidateId]: [entry, ...(prev[candidateId] ?? [])],
+      };
+    });
+  }, []);
   const details = JOB_DETAILS[job.id] || {
     experienceRange: "Not specified",
     workMode: "Not specified",
@@ -5422,6 +6109,7 @@ function CandidateMatchView({ job, onBack }) {
               status={candidateStatuses[candidate.id]}
               onChangeStatus={handleChangeCandidateStatus}
               showPipelineStatus={activeTab === "unlocked"}
+              onRequestAddComment={openCommentDialog}
             />
           ))}
         </Stack>
@@ -5616,8 +6304,21 @@ function CandidateMatchView({ job, onBack }) {
           hasNext={hasNextCandidate}
           unlockedIds={unlockedIds}
           onUnlockCandidate={handleUnlock}
+          comments={commentsByCandidateId[detailCandidate.id] ?? []}
+          onRequestAddComment={openCommentDialog}
         />
       )}
+
+      <CandidateCommentDialog
+        open={Boolean(commentDialogCandidate)}
+        candidate={commentDialogCandidate}
+        onClose={closeCommentDialog}
+        onSubmit={(text) => {
+          if (commentDialogCandidate) {
+            handleAddComment(commentDialogCandidate.id, text);
+          }
+        }}
+      />
     </Box>
   );
 }
