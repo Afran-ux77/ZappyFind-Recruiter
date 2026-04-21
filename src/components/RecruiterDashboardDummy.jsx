@@ -64,6 +64,7 @@ import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
 import PersonAddAlt1OutlinedIcon from "@mui/icons-material/PersonAddAlt1Outlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
@@ -97,6 +98,10 @@ import RecruiterSettingsPanel from "./RecruiterSettingsPanel";
 
 /** Star for quick reference (not a pipeline stage): orange outline, yellow when active. */
 const SHORTLIST_STAR_ACTIVE = "#EAB308";
+
+/** Recommended candidates who also submitted an application for the same posting. */
+const ALSO_APPLIED_ON_RECOMMENDED_TOOLTIP =
+  "This candidate is recommended by ZappyFind and has also applied to this job. You will see the same person listed under Applied.";
 
 const DOMAIN_THEMES = {
   Engineering: { Icon: CodeOutlinedIcon, bg: "#EFF6FF", accent: "#3B82F6", border: "#BFDBFE" },
@@ -197,7 +202,7 @@ const SAMPLE_JOBS = [
     appliedToday: 0, appliedThisWeek: 0, newMatchesThisWeek: 0, responseRate: 61, avgDaysToHire: 26, pipelineHealth: "closed", topSource: "Job Board", contacted: 28, interviewing: 6, shortlisted: 8,
   },
   { id: 6, title: "Marketing Manager", dept: "Marketing", location: "Austin, TX", status: "draft", matches: 0, newMatches24h: 0, unlocked: 0, applied: 0, posted: "" },
-  { id: 7, title: "Customer Success Lead", dept: "Customer Success", location: "Remote", status: "active", matches: 24, newMatches24h: 6, unlocked: 3, applied: 7, posted: "1 week ago", appliedToday: 2, appliedThisWeek: 5, newMatchesThisWeek: 14, responseRate: 76, avgDaysToHire: 19, pipelineHealth: "moderate", topSource: "LinkedIn", contacted: 10, interviewing: 3, shortlisted: 4 },
+  { id: 7, title: "Customer Success Lead", dept: "Customer Success", location: "Remote", status: "active", matches: 36, newMatches24h: 6, unlocked: 6, applied: 6, posted: "1 week ago", appliedToday: 2, appliedThisWeek: 5, newMatchesThisWeek: 14, responseRate: 76, avgDaysToHire: 19, pipelineHealth: "moderate", topSource: "LinkedIn", contacted: 10, interviewing: 3, shortlisted: 4 },
   { id: 8, title: "Frontend Engineer", dept: "Engineering", location: "Remote", status: "draft", matches: 0, newMatches24h: 0, unlocked: 0, applied: 0, posted: "" },
   {
     id: 9,
@@ -248,6 +253,22 @@ const STATUS_CHIP = {
   draft: { label: "Draft", bg: "rgba(202,138,4,0.08)", color: "#b45309", border: "rgba(202,138,4,0.22)" },
   closed: { label: "Closed", bg: "rgba(100,116,139,0.08)", color: "#64748b", border: "rgba(100,116,139,0.2)" },
 };
+
+/**
+ * Statuses a recruiter can set on an unlocked candidate directly from the card.
+ * Ordered to mirror the natural progression: just unlocked → outreach → evaluation.
+ * "new" is always the default the moment a profile is unlocked.
+ */
+const CANDIDATE_UNLOCKED_STATUSES = [
+  { id: "new", label: "New", color: "#2563EB", bg: "rgba(37,99,235,0.10)", border: "rgba(37,99,235,0.24)", description: "Just unlocked, not actioned yet." },
+  { id: "contacted", label: "Contacted", color: "#7C3AED", bg: "rgba(124,58,237,0.10)", border: "rgba(124,58,237,0.24)", description: "Reached out via email or call." },
+  { id: "no_answer", label: "No answer", color: "#B45309", bg: "rgba(180,83,9,0.10)", border: "rgba(180,83,9,0.24)", description: "Tried to connect, awaiting a reply." },
+  { id: "shortlisted", label: "Shortlisted", color: "#16A34A", bg: "rgba(22,163,74,0.10)", border: "rgba(22,163,74,0.24)", description: "Moving forward for this role." },
+  { id: "interviewing", label: "Interviewing", color: "#0891B2", bg: "rgba(8,145,178,0.10)", border: "rgba(8,145,178,0.24)", description: "Scheduled or in an active round." },
+  { id: "not_fit", label: "Not a fit", color: "#B91C1C", bg: "rgba(185,28,28,0.08)", border: "rgba(185,28,28,0.24)", description: "Reviewed, not moving forward." },
+];
+const CANDIDATE_STATUS_MAP = Object.fromEntries(CANDIDATE_UNLOCKED_STATUSES.map((s) => [s.id, s]));
+const DEFAULT_CANDIDATE_STATUS = "new";
 
 function JobClosedDetailsTooltip({ job }) {
   return (
@@ -383,21 +404,21 @@ function formatRoleContextLine(job, details) {
 const MOCK_CANDIDATES = {
   1: [
     { id: 101, firstName: "James", lastName: "Chen", locked: false, source: "applied", role: "Senior Product Manager", company: "TechCorp", yearsExp: 7, location: "San Francisco, CA", matchScore: 92, email: "james.chen@email.com", phone: "(415) 555-0123", aiReason: "7 years leading cross-functional product teams with a strong ownership track record. His 0-to-1 launches at TechCorp directly align with your execution and problem-solving bar.", competencies: [{ name: "Problem Solving", score: 88 }, { name: "Ownership", score: 94 }, { name: "Execution", score: 91 }, { name: "Communication", score: 85 }, { name: "Collaboration", score: 87 }] },
-    { id: 102, firstName: "Sarah", lastName: "Robinson", locked: true, source: "recommended", role: "Product Lead", company: "InnovateCo", yearsExp: 8, location: "Remote", matchScore: 88, email: "sarah.r@email.com", phone: "(628) 555-0456", aiReason: "Scaled product org from 5 to 20 at a Series B startup, demonstrating the ownership and collaboration this role demands. Her user-centric decision framework scores high on problem solving.", competencies: [{ name: "Problem Solving", score: 89 }, { name: "Ownership", score: 91 }, { name: "Execution", score: 85 }, { name: "Communication", score: 88 }, { name: "Collaboration", score: 90 }] },
-    { id: 103, firstName: "Michael", lastName: "Torres", locked: true, source: "recommended", role: "Group Product Manager", company: "ScaleAI", yearsExp: 9, location: "San Francisco, CA", matchScore: 86, email: "m.torres@email.com", phone: "(510) 555-0789", aiReason: "Managed a $12M product P&L with 3 direct PM reports. His execution velocity and data-informed approach are a strong fit for your high-ownership culture.", competencies: [{ name: "Problem Solving", score: 84 }, { name: "Ownership", score: 90 }, { name: "Execution", score: 88 }, { name: "Communication", score: 80 }, { name: "Collaboration", score: 82 }] },
+    { id: 102, firstName: "Sarah", lastName: "Robinson", locked: true, source: "recommended", alsoAppliedToJob: true, role: "Product Lead", company: "InnovateCo", yearsExp: 8, location: "Remote", matchScore: 88, email: "sarah.r@email.com", phone: "(628) 555-0456", aiReason: "Scaled product org from 5 to 20 at a Series B startup, demonstrating the ownership and collaboration this role demands. Her user-centric decision framework scores high on problem solving.", competencies: [{ name: "Problem Solving", score: 89 }, { name: "Ownership", score: 91 }, { name: "Execution", score: 85 }, { name: "Communication", score: 88 }, { name: "Collaboration", score: 90 }] },
+    { id: 103, firstName: "Michael", lastName: "Torres", locked: true, source: "recommended", alsoAppliedToJob: true, role: "Group Product Manager", company: "ScaleAI", yearsExp: 9, location: "San Francisco, CA", matchScore: 86, email: "m.torres@email.com", phone: "(510) 555-0789", aiReason: "Managed a $12M product P&L with 3 direct PM reports. His execution velocity and data-informed approach are a strong fit for your high-ownership culture.", competencies: [{ name: "Problem Solving", score: 84 }, { name: "Ownership", score: 90 }, { name: "Execution", score: 88 }, { name: "Communication", score: 80 }, { name: "Collaboration", score: 82 }] },
     { id: 104, firstName: "Priya", lastName: "Sharma", locked: true, source: "applied", role: "Senior PM", company: "Dropbox", yearsExp: 6, location: "San Francisco, CA", matchScore: 84, email: "priya.s@email.com", phone: "(408) 555-0321", aiReason: "Led the enterprise collaboration suite used by 50K+ teams. Her communication scores are exceptional, and she brings strong cross-functional execution experience.", competencies: [{ name: "Problem Solving", score: 82 }, { name: "Ownership", score: 85 }, { name: "Execution", score: 83 }, { name: "Communication", score: 92 }, { name: "Collaboration", score: 86 }] },
     { id: 105, firstName: "David", lastName: "Kim", locked: true, source: "recommended", role: "Product Manager", company: "Stripe", yearsExp: 5, location: "New York, NY", matchScore: 81, email: "d.kim@email.com", phone: "(212) 555-0654", aiReason: "Built Stripe's merchant analytics dashboard from scratch. Strong technical depth combined with clear stakeholder communication makes him a well-rounded PM candidate.", competencies: [{ name: "Problem Solving", score: 86 }, { name: "Ownership", score: 79 }, { name: "Execution", score: 82 }, { name: "Communication", score: 81 }, { name: "Collaboration", score: 78 }] },
     { id: 106, firstName: "Emily", lastName: "Watson", locked: true, source: "applied", role: "Senior Product Manager", company: "Figma", yearsExp: 6, location: "Remote", matchScore: 79, email: "e.watson@email.com", phone: "(415) 555-0987", aiReason: "Deep expertise in design-tool workflows. Her collaborative approach to product discovery and strong execution on FigJam positioned it as a standalone product line.", competencies: [{ name: "Problem Solving", score: 80 }, { name: "Ownership", score: 78 }, { name: "Execution", score: 81 }, { name: "Communication", score: 84 }, { name: "Collaboration", score: 82 }] },
   ],
   2: [
-    { id: 201, firstName: "Zoe", lastName: "Park", locked: false, source: "recommended", role: "Senior UX Designer", company: "Airbnb", yearsExp: 5, location: "San Francisco, CA", matchScore: 94, email: "zoe.park@email.com", phone: "(415) 555-1001", aiReason: "Led Airbnb's checkout redesign that improved conversion by 18%. Her research-driven design process and systems thinking are exactly what this role needs.", competencies: [{ name: "Visual Design", score: 92 }, { name: "User Research", score: 95 }, { name: "Prototyping", score: 90 }, { name: "Systems Thinking", score: 88 }, { name: "Accessibility", score: 91 }] },
+    { id: 201, firstName: "Zoe", lastName: "Park", locked: false, source: "recommended", alsoAppliedToJob: true, role: "Senior UX Designer", company: "Airbnb", yearsExp: 5, location: "San Francisco, CA", matchScore: 94, email: "zoe.park@email.com", phone: "(415) 555-1001", aiReason: "Led Airbnb's checkout redesign that improved conversion by 18%. Her research-driven design process and systems thinking are exactly what this role needs.", competencies: [{ name: "Visual Design", score: 92 }, { name: "User Research", score: 95 }, { name: "Prototyping", score: 90 }, { name: "Systems Thinking", score: 88 }, { name: "Accessibility", score: 91 }] },
     { id: 202, firstName: "Marcus", lastName: "Johnson", locked: true, source: "applied", role: "Product Designer", company: "Spotify", yearsExp: 4, location: "Remote", matchScore: 89, email: "marcus.j@email.com", phone: "(720) 555-1002", aiReason: "Redesigned Spotify's playlist creation flow serving 400M+ users. His visual craft and ability to translate research into high-fidelity prototypes is a standout.", competencies: [{ name: "Visual Design", score: 94 }, { name: "User Research", score: 86 }, { name: "Prototyping", score: 91 }, { name: "Systems Thinking", score: 82 }, { name: "Accessibility", score: 84 }] },
     { id: 203, firstName: "Aisha", lastName: "Patel", locked: true, source: "recommended", role: "UX Designer", company: "Notion", yearsExp: 3, location: "New York, NY", matchScore: 85, email: "aisha.p@email.com", phone: "(646) 555-1003", aiReason: "Built Notion's design system from the ground up, demonstrating systems thinking beyond her years. Strong prototyping skills with a user-research-first mindset.", competencies: [{ name: "Visual Design", score: 86 }, { name: "User Research", score: 88 }, { name: "Prototyping", score: 87 }, { name: "Systems Thinking", score: 90 }, { name: "Accessibility", score: 83 }] },
     { id: 204, firstName: "Leo", lastName: "Andersen", locked: true, source: "applied", role: "Senior Designer", company: "Linear", yearsExp: 6, location: "Remote", matchScore: 82, email: "leo.a@email.com", phone: "(503) 555-1004", aiReason: "Crafted Linear's minimalist design language that's become an industry benchmark. His strong visual instincts and rapid prototyping workflow would accelerate your design velocity.", competencies: [{ name: "Visual Design", score: 95 }, { name: "User Research", score: 78 }, { name: "Prototyping", score: 88 }, { name: "Systems Thinking", score: 84 }, { name: "Accessibility", score: 79 }] },
     { id: 205, firstName: "Nina", lastName: "Kowalski", locked: true, source: "recommended", role: "UX/UI Designer", company: "Canva", yearsExp: 4, location: "Remote", matchScore: 78, email: "nina.k@email.com", phone: "(312) 555-1005", aiReason: "Designed Canva's collaborative whiteboard feature end-to-end. Her user research chops and ability to ship polished prototypes quickly make her a strong contender.", competencies: [{ name: "Visual Design", score: 84 }, { name: "User Research", score: 82 }, { name: "Prototyping", score: 80 }, { name: "Systems Thinking", score: 76 }, { name: "Accessibility", score: 77 }] },
   ],
   3: [
-    { id: 301, firstName: "Alex", lastName: "Petrov", locked: false, source: "recommended", role: "Staff Engineer", company: "Vercel", yearsExp: 8, location: "Remote", matchScore: 95, email: "alex.p@email.com", phone: "(347) 555-2001", aiReason: "Core contributor to Next.js with deep expertise in distributed systems. His code review standards and architectural decisions at Vercel demonstrate the technical depth and system design mastery you require.", competencies: [{ name: "Technical Depth", score: 96 }, { name: "System Design", score: 93 }, { name: "Code Quality", score: 94 }, { name: "Problem Solving", score: 90 }, { name: "Mentorship", score: 88 }] },
+    { id: 301, firstName: "Alex", lastName: "Petrov", locked: false, source: "recommended", alsoAppliedToJob: true, role: "Staff Engineer", company: "Vercel", yearsExp: 8, location: "Remote", matchScore: 95, email: "alex.p@email.com", phone: "(347) 555-2001", aiReason: "Core contributor to Next.js with deep expertise in distributed systems. His code review standards and architectural decisions at Vercel demonstrate the technical depth and system design mastery you require.", competencies: [{ name: "Technical Depth", score: 96 }, { name: "System Design", score: 93 }, { name: "Code Quality", score: 94 }, { name: "Problem Solving", score: 90 }, { name: "Mentorship", score: 88 }] },
     { id: 302, firstName: "Rachel", lastName: "Liu", locked: true, source: "applied", role: "Senior Backend Engineer", company: "Datadog", yearsExp: 6, location: "New York, NY", matchScore: 91, email: "rachel.l@email.com", phone: "(212) 555-2002", aiReason: "Built Datadog's real-time metrics pipeline processing 10B+ events daily. Her system design instincts and commitment to code quality align perfectly with your engineering standards.", competencies: [{ name: "Technical Depth", score: 90 }, { name: "System Design", score: 92 }, { name: "Code Quality", score: 91 }, { name: "Problem Solving", score: 88 }, { name: "Mentorship", score: 85 }] },
     { id: 303, firstName: "Omar", lastName: "Hassan", locked: true, source: "applied", role: "Backend Engineer", company: "Cloudflare", yearsExp: 5, location: "Austin, TX", matchScore: 87, email: "omar.h@email.com", phone: "(512) 555-2003", aiReason: "Designed Cloudflare's edge caching layer that reduced latency by 40%. Strong problem-solving skills with a focus on reliability and clean, maintainable code.", competencies: [{ name: "Technical Depth", score: 88 }, { name: "System Design", score: 86 }, { name: "Code Quality", score: 89 }, { name: "Problem Solving", score: 85 }, { name: "Mentorship", score: 79 }] },
     { id: 304, firstName: "Tanya", lastName: "Müller", locked: true, source: "recommended", role: "Senior Software Engineer", company: "Shopify", yearsExp: 7, location: "Remote", matchScore: 84, email: "tanya.m@email.com", phone: "(604) 555-2004", aiReason: "Led Shopify's checkout performance team, reducing p99 latency from 2.1s to 800ms. Her pragmatic approach to system design balances technical excellence with shipping velocity.", competencies: [{ name: "Technical Depth", score: 85 }, { name: "System Design", score: 87 }, { name: "Code Quality", score: 83 }, { name: "Problem Solving", score: 86 }, { name: "Mentorship", score: 82 }] },
@@ -405,25 +426,42 @@ const MOCK_CANDIDATES = {
   ],
   4: [
     { id: 401, firstName: "Jordan", lastName: "Blake", locked: false, source: "applied", role: "Growth Marketing Manager", company: "HubSpot", yearsExp: 6, location: "Austin, TX", matchScore: 90, email: "jordan.b@email.com", phone: "(512) 555-3001", aiReason: "Grew HubSpot's SMB pipeline by 35% through data-driven experimentation. His strategic thinking and analytical rigor are a natural fit for your growth-stage needs.", competencies: [{ name: "Strategy", score: 91 }, { name: "Analytics", score: 89 }, { name: "Creativity", score: 86 }, { name: "Execution", score: 88 }, { name: "Storytelling", score: 84 }] },
-    { id: 402, firstName: "Camille", lastName: "Dubois", locked: true, source: "recommended", role: "Senior Growth Lead", company: "Notion", yearsExp: 7, location: "San Francisco, CA", matchScore: 86, email: "camille.d@email.com", phone: "(415) 555-3002", aiReason: "Spearheaded Notion's PLG motion that drove 2M organic signups in 12 months. Her creative campaign instincts paired with deep analytics skills are rare to find together.", competencies: [{ name: "Strategy", score: 88 }, { name: "Analytics", score: 85 }, { name: "Creativity", score: 90 }, { name: "Execution", score: 84 }, { name: "Storytelling", score: 87 }] },
+    { id: 402, firstName: "Camille", lastName: "Dubois", locked: true, source: "recommended", alsoAppliedToJob: true, role: "Senior Growth Lead", company: "Notion", yearsExp: 7, location: "San Francisco, CA", matchScore: 86, email: "camille.d@email.com", phone: "(415) 555-3002", aiReason: "Spearheaded Notion's PLG motion that drove 2M organic signups in 12 months. Her creative campaign instincts paired with deep analytics skills are rare to find together.", competencies: [{ name: "Strategy", score: 88 }, { name: "Analytics", score: 85 }, { name: "Creativity", score: 90 }, { name: "Execution", score: 84 }, { name: "Storytelling", score: 87 }] },
     { id: 403, firstName: "Ryan", lastName: "Okafor", locked: true, source: "applied", role: "Marketing Manager", company: "Lattice", yearsExp: 5, location: "Remote", matchScore: 82, email: "ryan.o@email.com", phone: "(213) 555-3003", aiReason: "Built Lattice's demand gen engine from scratch, achieving 4x pipeline growth in 18 months. Strong execution paired with a strategic, metrics-first approach to campaigns.", competencies: [{ name: "Strategy", score: 84 }, { name: "Analytics", score: 82 }, { name: "Creativity", score: 80 }, { name: "Execution", score: 86 }, { name: "Storytelling", score: 81 }] },
     { id: 404, firstName: "Sophie", lastName: "Lin", locked: true, source: "recommended", role: "Growth Marketer", company: "Canva", yearsExp: 5, location: "Austin, TX", matchScore: 78, email: "sophie.l@email.com", phone: "(737) 555-3004", aiReason: "Managed Canva's international expansion campaigns across 6 markets. Her adaptability and creative problem-solving complement solid analytical foundations.", competencies: [{ name: "Strategy", score: 80 }, { name: "Analytics", score: 78 }, { name: "Creativity", score: 83 }, { name: "Execution", score: 79 }, { name: "Storytelling", score: 76 }] },
   ],
   7: [
-    { id: 701, firstName: "Mia", lastName: "Chen", locked: false, source: "recommended", role: "Senior CS Manager", company: "Zendesk", yearsExp: 5, location: "Remote", matchScore: 91, email: "mia.chen@email.com", phone: "(628) 555-4001", aiReason: "Managed a $8M book of business with 97% retention rate. Her empathetic communication style and deep product knowledge make her a natural fit for your customer-first culture.", competencies: [{ name: "Empathy", score: 94 }, { name: "Communication", score: 92 }, { name: "Problem Solving", score: 88 }, { name: "Product Knowledge", score: 90 }, { name: "Adaptability", score: 91 }] },
-    { id: 702, firstName: "Tyler", lastName: "Brooks", locked: true, source: "applied", role: "Customer Success Lead", company: "Intercom", yearsExp: 4, location: "Remote", matchScore: 81, email: "tyler.b@email.com", phone: "(503) 555-4002", aiReason: "Reduced churn by 22% through proactive health scoring and strategic outreach. His relationship-building skills and product expertise drive measurable retention outcomes.", competencies: [{ name: "Empathy", score: 88 }, { name: "Communication", score: 90 }, { name: "Problem Solving", score: 84 }, { name: "Product Knowledge", score: 86 }, { name: "Adaptability", score: 83 }] },
-    { id: 703, firstName: "Ananya", lastName: "Gupta", locked: false, source: "recommended", role: "CS Manager", company: "Freshworks", yearsExp: 3, location: "Chicago, IL", matchScore: 74, email: "ananya.g@email.com", phone: "(312) 555-4003", aiReason: "Onboarded 120+ enterprise accounts with a 95% time-to-value improvement. Her structured problem-solving and empathetic approach consistently earn top NPS scores.", competencies: [{ name: "Empathy", score: 90 }, { name: "Communication", score: 85 }, { name: "Problem Solving", score: 86 }, { name: "Product Knowledge", score: 82 }, { name: "Adaptability", score: 84 }] },
+    { id: 701, firstName: "Mia", lastName: "Chen", locked: false, source: "recommended", alsoAppliedToJob: true, role: "Senior CS Manager", company: "Zendesk", yearsExp: 5, location: "Remote", matchScore: 91, email: "mia.chen@email.com", phone: "(628) 555-4001", aiReason: "Managed a $8M book of business with 97% retention rate. Her empathetic communication style and deep product knowledge make her a natural fit for your customer-first culture.", competencies: [{ name: "Empathy", score: 94 }, { name: "Communication", score: 92 }, { name: "Problem Solving", score: 88 }, { name: "Product Knowledge", score: 90 }, { name: "Relationship Building", score: 91 }] },
+    { id: 702, firstName: "Tyler", lastName: "Brooks", locked: true, source: "applied", role: "Customer Success Lead", company: "Intercom", yearsExp: 4, location: "Remote", matchScore: 81, email: "tyler.b@email.com", phone: "(503) 555-4002", aiReason: "Reduced churn by 22% through proactive health scoring and strategic outreach. His relationship-building skills and product expertise drive measurable retention outcomes.", competencies: [{ name: "Empathy", score: 88 }, { name: "Communication", score: 90 }, { name: "Problem Solving", score: 84 }, { name: "Product Knowledge", score: 86 }, { name: "Execution", score: 83 }] },
+    { id: 703, firstName: "Ananya", lastName: "Gupta", locked: false, source: "recommended", role: "CS Manager", company: "Freshworks", yearsExp: 3, location: "Chicago, IL", matchScore: 74, email: "ananya.g@email.com", phone: "(312) 555-4003", aiReason: "Onboarded 120+ enterprise accounts with a 95% time-to-value improvement. Her structured problem-solving and empathetic approach consistently earn top NPS scores.", competencies: [{ name: "Empathy", score: 90 }, { name: "Communication", score: 85 }, { name: "Problem Solving", score: 86 }, { name: "Product Knowledge", score: 82 }, { name: "Relationship Building", score: 84 }] },
+    { id: 704, firstName: "Jordan", lastName: "Ellis", locked: true, source: "recommended", role: "Principal CS Manager", company: "Gainsight", yearsExp: 6, location: "Remote", matchScore: 88, email: "jordan.ellis@email.com", phone: "(415) 555-4010", aiReason: "Led QBR cadence for Fortune 500 logos and tied adoption metrics to renewal forecasts. Strong executive presence and stakeholder management in complex procurement cycles.", competencies: [{ name: "Empathy", score: 86 }, { name: "Communication", score: 89 }, { name: "Problem Solving", score: 87 }, { name: "Product Knowledge", score: 88 }, { name: "Relationship Building", score: 90 }] },
+    { id: 705, firstName: "Samira", lastName: "Haddad", locked: true, source: "recommended", role: "Customer Success Manager", company: "HubSpot", yearsExp: 4, location: "Boston, MA", matchScore: 86, email: "samira.h@email.com", phone: "(617) 555-4011", aiReason: "Scaled a high-touch segment while maintaining a 48-hour SLA on escalations. Clear written communication and calm handling of renewal risk conversations.", competencies: [{ name: "Empathy", score: 90 }, { name: "Communication", score: 87 }, { name: "Problem Solving", score: 85 }, { name: "Product Knowledge", score: 84 }, { name: "Execution", score: 86 }] },
+    { id: 706, firstName: "Chris", lastName: "Nguyen", locked: true, source: "recommended", role: "Senior CSM", company: "Salesforce", yearsExp: 5, location: "San Francisco, CA", matchScore: 83, email: "chris.n@email.com", phone: "(415) 555-4012", aiReason: "Partnered with Solutions on technical blockers while keeping executives aligned on value. Practical product knowledge and consistent follow-through on success plans.", competencies: [{ name: "Empathy", score: 84 }, { name: "Communication", score: 86 }, { name: "Problem Solving", score: 88 }, { name: "Product Knowledge", score: 87 }, { name: "Relationship Building", score: 82 }] },
+    { id: 707, firstName: "Riley", lastName: "Patel", locked: false, source: "recommended", role: "CS Manager", company: "Twilio", yearsExp: 3, location: "Remote", matchScore: 79, email: "riley.p@email.com", phone: "(206) 555-4013", aiReason: "Improved onboarding completion by 31% with milestone-based checklists. Collaborative style and quick learning curve on API-heavy customer use cases.", competencies: [{ name: "Empathy", score: 85 }, { name: "Communication", score: 82 }, { name: "Problem Solving", score: 80 }, { name: "Product Knowledge", score: 78 }, { name: "Execution", score: 81 }] },
+    { id: 708, firstName: "Noah", lastName: "Martinez", locked: true, source: "recommended", role: "Enterprise CSM", company: "Okta", yearsExp: 7, location: "Austin, TX", matchScore: 87, email: "noah.m@email.com", phone: "(512) 555-4014", aiReason: "Owned renewal readiness for a portfolio over $12M ARR with strong forecast hygiene. Executive presence in security and IT stakeholder meetings.", competencies: [{ name: "Empathy", score: 82 }, { name: "Communication", score: 88 }, { name: "Problem Solving", score: 86 }, { name: "Product Knowledge", score: 85 }, { name: "Relationship Building", score: 89 }] },
+    { id: 709, firstName: "Taylor", lastName: "Reed", locked: true, source: "recommended", role: "CS Lead", company: "Slack", yearsExp: 5, location: "Remote", matchScore: 82, email: "taylor.r@email.com", phone: "(720) 555-4015", aiReason: "Drove adoption workshops that lifted weekly active teams by 27%. Energetic facilitation and strong listening skills in noisy enterprise environments.", competencies: [{ name: "Empathy", score: 88 }, { name: "Communication", score: 85 }, { name: "Problem Solving", score: 81 }, { name: "Product Knowledge", score: 83 }, { name: "Execution", score: 84 }] },
+    { id: 710, firstName: "Casey", lastName: "Liu", locked: false, source: "recommended", role: "Strategic CSM", company: "Workday", yearsExp: 6, location: "Denver, CO", matchScore: 90, email: "casey.liu@email.com", phone: "(303) 555-4016", aiReason: "Mapped customer outcomes to product capabilities in QBRs that secured two expansions. High empathy with finance and HR personas.", competencies: [{ name: "Empathy", score: 91 }, { name: "Communication", score: 89 }, { name: "Problem Solving", score: 88 }, { name: "Product Knowledge", score: 87 }, { name: "Relationship Building", score: 90 }] },
+    { id: 711, firstName: "Jamie", lastName: "Okonkwo", locked: true, source: "applied", role: "Customer Success Manager", company: "Notion", yearsExp: 4, location: "Remote", matchScore: 88, email: "jamie.o@email.com", phone: "(646) 555-4017", aiReason: "Applied with a concise portfolio of playbooks for onboarding and renewal risk. Metrics-driven storytelling matches your success-planning expectations.", competencies: [{ name: "Empathy", score: 87 }, { name: "Communication", score: 90 }, { name: "Problem Solving", score: 86 }, { name: "Product Knowledge", score: 85 }, { name: "Execution", score: 87 }] },
+    { id: 712, firstName: "Alex", lastName: "Rivera", locked: false, source: "applied", role: "CS Associate", company: "Chargebee", yearsExp: 2, location: "Miami, FL", matchScore: 76, email: "alex.r@email.com", phone: "(305) 555-4018", aiReason: "Early-career energy with structured notes from every customer touchpoint. Growing product knowledge in subscription billing workflows.", competencies: [{ name: "Empathy", score: 84 }, { name: "Communication", score: 80 }, { name: "Problem Solving", score: 75 }, { name: "Product Knowledge", score: 74 }, { name: "Relationship Building", score: 78 }] },
+    { id: 713, firstName: "Morgan", lastName: "Singh", locked: true, source: "applied", role: "Senior CSM", company: "Lattice", yearsExp: 5, location: "Remote", matchScore: 84, email: "morgan.s@email.com", phone: "(415) 555-4019", aiReason: "Reduced time-to-value for mid-market rollouts with cohort-based training. Solid facilitation skills and calm under renewal pressure.", competencies: [{ name: "Empathy", score: 86 }, { name: "Communication", score: 85 }, { name: "Problem Solving", score: 83 }, { name: "Product Knowledge", score: 82 }, { name: "Execution", score: 85 }] },
+    { id: 714, firstName: "Quinn", lastName: "Berg", locked: true, source: "applied", role: "Implementation Manager", company: "Monday.com", yearsExp: 4, location: "Tel Aviv, IL", matchScore: 73, email: "quinn.b@email.com", phone: "+972 52-555-4020", aiReason: "Hands-on implementation background that shortens handoff into steady-state CS. Practical problem solving when integrations stall customer go-live.", competencies: [{ name: "Empathy", score: 80 }, { name: "Communication", score: 78 }, { name: "Problem Solving", score: 82 }, { name: "Product Knowledge", score: 76 }, { name: "Execution", score: 79 }] },
+    { id: 715, firstName: "Drew", lastName: "Foster", locked: true, source: "applied", role: "CS Manager", company: "Asana", yearsExp: 3, location: "Remote", matchScore: 80, email: "drew.f@email.com", phone: "(503) 555-4021", aiReason: "Balanced reactive support with proactive outreach using health scores. Clear communication with product on recurring customer themes.", competencies: [{ name: "Empathy", score: 85 }, { name: "Communication", score: 84 }, { name: "Problem Solving", score: 79 }, { name: "Product Knowledge", score: 81 }, { name: "Relationship Building", score: 82 }] },
   ],
   5: [
     { id: 501, firstName: "Kai", lastName: "Yamamoto", locked: false, source: "applied", role: "Senior Data Analyst", company: "Tableau", yearsExp: 4, location: "Seattle, WA", matchScore: 89, email: "kai.y@email.com", phone: "(206) 555-5001", aiReason: "Built self-service analytics dashboards used by 200+ internal stakeholders. His statistical rigor and ability to translate data into actionable business insights stand out.", competencies: [{ name: "Statistical Analysis", score: 91 }, { name: "Data Modeling", score: 88 }, { name: "Communication", score: 85 }, { name: "Problem Solving", score: 87 }, { name: "SQL Fluency", score: 93 }] },
-    { id: 502, firstName: "Lena", lastName: "Vogt", locked: true, source: "recommended", role: "Data Analyst", company: "Amplitude", yearsExp: 3, location: "Remote", matchScore: 84, email: "lena.v@email.com", phone: "(720) 555-5002", aiReason: "Designed Amplitude's internal product health framework tracking 50+ metrics. Strong data modeling skills with a knack for clear, executive-level communication.", competencies: [{ name: "Statistical Analysis", score: 86 }, { name: "Data Modeling", score: 85 }, { name: "Communication", score: 82 }, { name: "Problem Solving", score: 84 }, { name: "SQL Fluency", score: 89 }] },
+    { id: 502, firstName: "Lena", lastName: "Vogt", locked: true, source: "recommended", alsoAppliedToJob: true, role: "Data Analyst", company: "Amplitude", yearsExp: 3, location: "Remote", matchScore: 84, email: "lena.v@email.com", phone: "(720) 555-5002", aiReason: "Designed Amplitude's internal product health framework tracking 50+ metrics. Strong data modeling skills with a knack for clear, executive-level communication.", competencies: [{ name: "Statistical Analysis", score: 86 }, { name: "Data Modeling", score: 85 }, { name: "Communication", score: 82 }, { name: "Problem Solving", score: 84 }, { name: "SQL Fluency", score: 89 }] },
     { id: 503, firstName: "Ravi", lastName: "Kapoor", locked: true, source: "applied", role: "Analytics Lead", company: "Mixpanel", yearsExp: 5, location: "Chicago, IL", matchScore: 81, email: "ravi.k@email.com", phone: "(312) 555-5003", aiReason: "Led a team of 4 analysts delivering weekly business reviews to C-suite. His business acumen and statistical depth make complex data accessible to non-technical stakeholders.", competencies: [{ name: "Statistical Analysis", score: 84 }, { name: "Data Modeling", score: 82 }, { name: "Communication", score: 80 }, { name: "Problem Solving", score: 83 }, { name: "SQL Fluency", score: 86 }] },
   ],
   9: [
-    { id: 901, firstName: "Victoria", lastName: "Osei", locked: false, source: "recommended", role: "VP of Sales", company: "Gong", yearsExp: 11, location: "New York, NY", matchScore: 93, email: "v.osei@email.com", phone: "(212) 555-6001", aiReason: "Grew Gong's East Coast revenue from $8M to $42M in 3 years. Her negotiation instincts and strategic account planning are exactly the executive caliber this director role demands.", competencies: [{ name: "Negotiation", score: 95 }, { name: "Relationship Building", score: 92 }, { name: "Strategy", score: 91 }, { name: "Communication", score: 88 }, { name: "Leadership", score: 93 }] },
+    { id: 901, firstName: "Victoria", lastName: "Osei", locked: false, source: "recommended", alsoAppliedToJob: true, role: "VP of Sales", company: "Gong", yearsExp: 11, location: "New York, NY", matchScore: 93, email: "v.osei@email.com", phone: "(212) 555-6001", aiReason: "Grew Gong's East Coast revenue from $8M to $42M in 3 years. Her negotiation instincts and strategic account planning are exactly the executive caliber this director role demands.", competencies: [{ name: "Negotiation", score: 95 }, { name: "Relationship Building", score: 92 }, { name: "Strategy", score: 91 }, { name: "Communication", score: 88 }, { name: "Leadership", score: 93 }] },
     { id: 902, firstName: "Marcus", lastName: "Reed", locked: true, source: "applied", role: "Sales Director", company: "Outreach", yearsExp: 9, location: "San Francisco, CA", matchScore: 88, email: "m.reed@email.com", phone: "(415) 555-6002", aiReason: "Built and led a 25-person sales team that consistently exceeded quota by 120%. His ability to build deep relationships while maintaining strategic focus is a key differentiator.", competencies: [{ name: "Negotiation", score: 89 }, { name: "Relationship Building", score: 90 }, { name: "Strategy", score: 86 }, { name: "Communication", score: 85 }, { name: "Leadership", score: 87 }] },
     { id: 903, firstName: "Elena", lastName: "Petrov", locked: true, source: "applied", role: "Regional Sales Director", company: "Salesloft", yearsExp: 10, location: "Chicago, IL", matchScore: 85, email: "elena.p@email.com", phone: "(312) 555-6003", aiReason: "Closed $15M+ in enterprise deals annually with a 40% win rate. Her resilience in complex sales cycles and strategic deal structuring are well-suited to your enterprise motion.", competencies: [{ name: "Negotiation", score: 87 }, { name: "Relationship Building", score: 86 }, { name: "Strategy", score: 88 }, { name: "Communication", score: 83 }, { name: "Leadership", score: 84 }] },
   ],
+};
+
+/** Simulates profiles already unlocked in the dummy pool (by job id). */
+const MOCK_DEFAULT_UNLOCKED_IDS = {
+  7: [702, 704, 706, 708, 711, 712],
 };
 
 const CANDIDATE_PROFILE = {
@@ -1517,7 +1555,7 @@ function AiMatchInsightPanel({ matchLabel, aiReason, competencies = [], wrapperS
                 alignSelf: "center",
               }}
             >
-              Top matched ICP competencies
+              Top matched competencies
             </Typography>
             {topComps.map((comp, ci) => {
               const isFirst = ci === 0;
@@ -1582,15 +1620,194 @@ function AiMatchInsightPanel({ matchLabel, aiReason, competencies = [], wrapperS
   );
 }
 
-function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, starred = false, onToggleStar }) {
+/**
+ * Inline status chip + dropdown shown on unlocked candidate cards.
+ * Lets recruiters advance the candidate through the pipeline without
+ * opening the detail modal.
+ */
+function CandidateStatusPill({ status, onChange, candidateName }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const current = CANDIDATE_STATUS_MAP[status] || CANDIDATE_STATUS_MAP[DEFAULT_CANDIDATE_STATUS];
+
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    setAnchorEl(e.currentTarget);
+  };
+  /** App shell uses z-index 1500; menu must render above it or it opens invisibly behind the fixed layer. */
+  const STATUS_MENU_Z = 2000;
+  const handleClose = () => setAnchorEl(null);
+  const handlePick = (id) => {
+    onChange?.(id);
+    handleClose();
+  };
+
+  return (
+    <>
+      <Box
+        component="button"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open ? "true" : "false"}
+        aria-label={`Candidate status: ${current.label}. Click to change.`}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onClick={handleOpen}
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.55,
+          height: 24,
+          pl: 0.85,
+          pr: 0.55,
+          borderRadius: "999px",
+          border: `1px solid ${current.border}`,
+          bgcolor: current.bg,
+          color: current.color,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          fontSize: "0.6875rem",
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          lineHeight: 1,
+          transition: "background-color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+          "&:hover": {
+            borderColor: current.color,
+            boxShadow: `0 0 0 3px ${current.color}14`,
+          },
+          "&:focus-visible": {
+            outline: `2px solid ${current.color}`,
+            outlineOffset: 2,
+          },
+        }}
+      >
+        <Box
+          component="span"
+          aria-hidden
+          sx={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            bgcolor: current.color,
+            flexShrink: 0,
+            boxShadow: `0 0 0 2px ${current.color}22`,
+          }}
+        />
+        {current.label}
+        <KeyboardArrowDownRoundedIcon sx={{ fontSize: 15, opacity: 0.75 }} />
+      </Box>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        sx={{ zIndex: STATUS_MENU_Z }}
+        slotProps={{
+          root: {
+            sx: { zIndex: STATUS_MENU_Z },
+          },
+          paper: {
+            sx: {
+              zIndex: STATUS_MENU_Z,
+              mt: 0.5,
+              minWidth: 236,
+              borderRadius: "14px",
+              border: "1px solid rgba(220,212,202,0.6)",
+              boxShadow: "0 14px 36px rgba(18,10,4,0.1), 0 2px 8px rgba(18,10,4,0.04)",
+              p: 0.5,
+            },
+          },
+        }}
+      >
+        <Box sx={{ px: 1.25, pt: 0.75, pb: 0.6 }}>
+          <Typography
+            sx={{
+              fontSize: "0.625rem",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: SHELL_MUTED,
+            }}
+          >
+            Set status{candidateName ? ` · ${candidateName}` : ""}
+          </Typography>
+        </Box>
+        {CANDIDATE_UNLOCKED_STATUSES.map((opt) => {
+          const selected = opt.id === current.id;
+          return (
+            <MenuItem
+              key={opt.id}
+              onClick={() => handlePick(opt.id)}
+              selected={selected}
+              sx={{
+                py: 0.85,
+                px: 1.25,
+                gap: 1,
+                alignItems: "flex-start",
+                borderRadius: "10px",
+                "&.Mui-selected": {
+                  bgcolor: `${opt.color}14`,
+                  "&:hover": { bgcolor: `${opt.color}22` },
+                },
+                "&:hover": { bgcolor: "rgba(23,18,14,0.035)" },
+              }}
+            >
+              <Box
+                component="span"
+                aria-hidden
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: opt.color,
+                  mt: 0.65,
+                  flexShrink: 0,
+                  boxShadow: `0 0 0 2px ${opt.color}22`,
+                }}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.25, letterSpacing: "-0.005em" }}>
+                  {opt.label}
+                </Typography>
+                <Typography sx={{ fontSize: "0.7rem", color: SHELL_MUTED, lineHeight: 1.35, mt: 0.1 }}>
+                  {opt.description}
+                </Typography>
+              </Box>
+              {selected && (
+                <CheckCircleOutlineRoundedIcon sx={{ fontSize: 16, color: opt.color, mt: 0.55, flexShrink: 0 }} />
+              )}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </>
+  );
+}
+
+function CandidateCard({
+  candidate,
+  isUnlocked,
+  onUnlock,
+  onViewDetails,
+  index,
+  starred = false,
+  onToggleStar,
+  status,
+  onChangeStatus,
+  showPipelineStatus = false,
+}) {
   const locked = candidate.locked && !isUnlocked;
   const matchColor = getMatchColor(candidate.matchScore);
   const matchLabel = getMatchLabel(candidate.matchScore);
   const [copiedContactField, setCopiedContactField] = useState(null);
   const appliedAtLabel = candidate.appliedAt || "Apr 11, 2026, 10:30 AM";
-  const sourceTooltipText = candidate.source === "applied"
-    ? `Applied candidate. Applied on ${appliedAtLabel}.`
-    : "Recommended by ZappyFind based on role fit and profile match.";
+  const alsoAppliedAsRecommended = candidate.source === "recommended" && candidate.alsoAppliedToJob;
+  const isAppliedSource = candidate.source === "applied";
+  const appliedSourceTooltip = `Applied candidate. Applied on ${appliedAtLabel}.`;
 
   const displayName = locked
     ? maskName(candidate.firstName, candidate.lastName)
@@ -1652,13 +1869,17 @@ function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, 
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.2, flexWrap: "wrap", rowGap: 0.25 }} useFlexGap>
-            <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ minWidth: 0, flexWrap: "wrap" }} useFlexGap>
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0, flex: "1 1 auto", flexWrap: "wrap", rowGap: 0.35 }} useFlexGap>
               <Typography
                 sx={{
                   fontSize: "0.9375rem",
                   fontWeight: 700,
                   color: locked ? SHELL_MUTED : SHELL_INK,
                   letterSpacing: locked ? "0.03em" : "-0.01em",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {displayName}
@@ -1672,78 +1893,92 @@ function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, 
                   letterSpacing: "0.05em",
                   fontVariantNumeric: "tabular-nums",
                   lineHeight: 1.2,
+                  flexShrink: 0,
                 }}
               >
                 {candidatePublicId}
               </Typography>
-            </Stack>
-            {locked && (
-              <Tooltip
-                title="Unlock this candidate to access full insights and contact details."
-                arrow
-                placement="top"
-              >
-                <Box
-                  component="span"
-                  aria-label="Profile locked. Unlock to access full insights and contact details."
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 28,
-                    height: 28,
-                    borderRadius: "8px",
-                    background: "linear-gradient(160deg, rgba(51,65,85,0.14) 0%, rgba(71,85,105,0.1) 100%)",
-                    border: "1px solid rgba(51,65,85,0.28)",
-                    boxShadow: "0 1px 3px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.55)",
-                    cursor: "default",
-                  }}
-                >
-                  <LockOutlinedIcon sx={{ fontSize: 16, color: "#334155" }} aria-hidden />
-                </Box>
-              </Tooltip>
-            )}
-            <Tooltip title={sourceTooltipText} arrow placement="top">
-              {candidate.source === "applied" ? (
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    px: 0.85,
-                    py: 0.2,
-                    borderRadius: "6px",
-                    bgcolor: "rgba(59,130,246,0.08)",
-                    border: "1px solid rgba(59,130,246,0.2)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <HowToRegOutlinedIcon sx={{ fontSize: 13, color: "#3B82F6" }} />
-                  <Typography component="span" sx={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.04em", color: "#3B82F6", textTransform: "uppercase", lineHeight: 1.4 }}>
-                    Applied
-                  </Typography>
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    px: 0.85,
-                    py: 0.2,
-                    borderRadius: "6px",
-                    bgcolor: "rgba(248,114,58,0.08)",
-                    border: "1px solid rgba(248,114,58,0.2)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <AutoAwesomeOutlinedIcon sx={{ fontSize: 13, color: SHELL_PRIMARY }} />
-                  <Typography component="span" sx={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.04em", color: SHELL_PRIMARY, textTransform: "uppercase", lineHeight: 1.4 }}>
-                    ZappyFind
-                  </Typography>
-                </Box>
+              {showPipelineStatus && isUnlocked && onChangeStatus && (
+                <CandidateStatusPill
+                  status={status}
+                  candidateName={`${candidate.firstName} ${candidate.lastName}`}
+                  onChange={(nextStatus) => onChangeStatus(candidate.id, nextStatus)}
+                />
               )}
-            </Tooltip>
+              {alsoAppliedAsRecommended && (
+                <Tooltip title={ALSO_APPLIED_ON_RECOMMENDED_TOOLTIP} arrow placement="top">
+                  <Box
+                    component="span"
+                    aria-label="Recommended by ZappyFind and applied to this job"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      bgcolor: "rgba(37,99,235,0.1)",
+                      border: "1px solid rgba(37,99,235,0.28)",
+                      flexShrink: 0,
+                      cursor: "default",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                    }}
+                  >
+                    <HowToRegOutlinedIcon sx={{ fontSize: 13, color: "#2563EB" }} aria-hidden />
+                  </Box>
+                </Tooltip>
+              )}
+              {isAppliedSource && (
+                <Tooltip title={appliedSourceTooltip} arrow placement="top">
+                  <Box
+                    component="span"
+                    aria-label={appliedSourceTooltip}
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      bgcolor: "rgba(37,99,235,0.1)",
+                      border: "1px solid rgba(37,99,235,0.28)",
+                      flexShrink: 0,
+                      cursor: "default",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                    }}
+                  >
+                    <HowToRegOutlinedIcon sx={{ fontSize: 13, color: "#2563EB" }} aria-hidden />
+                  </Box>
+                </Tooltip>
+              )}
+              {locked && (
+                <Tooltip
+                  title="Unlock this candidate to access full insights and contact details."
+                  arrow
+                  placement="top"
+                >
+                  <Box
+                    component="span"
+                    aria-label="Profile locked. Unlock to access full insights and contact details."
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 28,
+                      height: 28,
+                      borderRadius: "8px",
+                      flexShrink: 0,
+                      background: "linear-gradient(160deg, rgba(51,65,85,0.14) 0%, rgba(71,85,105,0.1) 100%)",
+                      border: "1px solid rgba(51,65,85,0.28)",
+                      boxShadow: "0 1px 3px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.55)",
+                      cursor: "default",
+                    }}
+                  >
+                    <LockOutlinedIcon sx={{ fontSize: 16, color: "#334155" }} aria-hidden />
+                  </Box>
+                </Tooltip>
+              )}
+            </Stack>
           </Stack>
           <Typography sx={{ fontSize: "0.8125rem", fontWeight: 500, color: SHELL_MUTED, mb: 0.15 }}>
             {roleLabel}
@@ -1766,12 +2001,12 @@ function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, 
         <Stack
           direction="row"
           spacing={1.25}
-          alignItems="center"
+          alignItems="flex-start"
           flexWrap="wrap"
           useFlexGap
           sx={{
             flex: { xs: "1 1 100%", md: "0 0 auto" },
-            mt: 0.5,
+            alignSelf: "flex-start",
             rowGap: 1,
             columnGap: 1.25,
             justifyContent: { xs: "flex-start", md: "flex-end" },
@@ -1779,7 +2014,7 @@ function CandidateCard({ candidate, isUnlocked, onUnlock, onViewDetails, index, 
           }}
         >
           {locked ? (
-            <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ rowGap: 0.75 }}>
+            <Stack direction="row" alignItems="flex-start" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ rowGap: 0.75 }}>
               {onToggleStar && (
                 <Tooltip title={starred ? "Remove star" : "Star for quick reference"} arrow>
                   <IconButton
@@ -4130,9 +4365,34 @@ function CandidateDetailDialog({
                         <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(23,18,14,0.42)" }}>
                           Source
                         </Typography>
-                        <Typography sx={{ fontSize: "0.875rem", fontWeight: 700, color: "rgba(23,18,14,0.82)", letterSpacing: "-0.02em", lineHeight: 1.3, mt: 0.4 }}>
-                          {displayedCandidate.source === "applied" ? "Applied to this job" : "ZappyFind recommendation"}
-                        </Typography>
+                        <Stack direction="row" alignItems="center" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mt: 0.4, gap: 0.75 }}>
+                          <Typography sx={{ fontSize: "0.875rem", fontWeight: 700, color: "rgba(23,18,14,0.82)", letterSpacing: "-0.02em", lineHeight: 1.3 }}>
+                            {displayedCandidate.source === "applied" ? "Applied to this job" : "ZappyFind recommendation"}
+                          </Typography>
+                          {displayedCandidate.source === "recommended" && displayedCandidate.alsoAppliedToJob && (
+                            <Tooltip title={ALSO_APPLIED_ON_RECOMMENDED_TOOLTIP} arrow placement="top">
+                              <Box
+                                component="span"
+                                aria-label="Also applied to this job"
+                                sx={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  bgcolor: "rgba(37,99,235,0.1)",
+                                  border: "1px solid rgba(37,99,235,0.28)",
+                                  flexShrink: 0,
+                                  cursor: "default",
+                                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                                }}
+                              >
+                                <HowToRegOutlinedIcon sx={{ fontSize: 14, color: "#2563EB" }} aria-hidden />
+                              </Box>
+                            </Tooltip>
+                          )}
+                        </Stack>
                       </Box>
                     </Box>
                   </Box>
@@ -4398,7 +4658,18 @@ function CandidateDetailDialog({
 }
 
 function CandidateMatchView({ job, onBack }) {
-  const [unlockedIds, setUnlockedIds] = useState(new Set());
+  const [unlockedIds, setUnlockedIds] = useState(
+    () => new Set(MOCK_DEFAULT_UNLOCKED_IDS[job.id] ?? []),
+  );
+  const [candidateStatuses, setCandidateStatuses] = useState(() => {
+    const preUnlocked = MOCK_DEFAULT_UNLOCKED_IDS[job.id] ?? [];
+    const rotation = ["contacted", "new", "shortlisted", "no_answer", "interviewing", "contacted"];
+    const seed = {};
+    preUnlocked.forEach((id, i) => {
+      seed[id] = rotation[i % rotation.length];
+    });
+    return seed;
+  });
   const [jdDialogOpen, setJdDialogOpen] = useState(false);
   const [jobActionsMenuAnchor, setJobActionsMenuAnchor] = useState(null);
   const [detailCandidate, setDetailCandidate] = useState(null);
@@ -4410,6 +4681,7 @@ function CandidateMatchView({ job, onBack }) {
     description: "",
   };
   const allCandidates = MOCK_CANDIDATES[job.id] || [];
+  const [activeTab, setActiveTab] = useState("recommendations");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [bulkDownloadSelected, setBulkDownloadSelected] = useState(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
@@ -4423,29 +4695,58 @@ function CandidateMatchView({ job, onBack }) {
   const isClosed = job.status === "closed";
   const unlockRate = job.matches > 0 ? Math.round(((job.unlocked || 0) / job.matches) * 100) : 0;
 
+  const recommendedCount = allCandidates.filter((c) => c.source === "recommended").length;
+  const appliedCount = allCandidates.filter((c) => c.source === "applied").length;
+  const unlockedCount = useMemo(
+    () => allCandidates.filter((c) => unlockedIds.has(c.id)).length,
+    [allCandidates, unlockedIds],
+  );
+  const starredCount = allCandidates.filter((c) => starredIds.has(c.id)).length;
+
+  const tabCandidates = useMemo(() => {
+    if (activeTab === "applied") return allCandidates.filter((c) => c.source === "applied");
+    if (activeTab === "unlocked") return allCandidates.filter((c) => unlockedIds.has(c.id));
+    return allCandidates.filter((c) => c.source === "recommended");
+  }, [activeTab, allCandidates, unlockedIds]);
+
   const candidates = useMemo(() => {
     const filtered =
-      sourceFilter === "all"
-        ? allCandidates
-        : sourceFilter === "starred"
-          ? allCandidates.filter((c) => starredIds.has(c.id))
-          : allCandidates.filter((c) => c.source === sourceFilter);
+      sourceFilter === "starred"
+        ? tabCandidates.filter((c) => starredIds.has(c.id))
+        : tabCandidates;
     return [...filtered].sort((a, b) => {
       if (candidateSort === "score_desc") return b.matchScore - a.matchScore;
       if (candidateSort === "score_asc") return a.matchScore - b.matchScore;
       return 0;
     });
-  }, [allCandidates, sourceFilter, candidateSort, starredIds]);
+  }, [tabCandidates, sourceFilter, candidateSort, starredIds]);
 
-  const appliedCount = allCandidates.filter((c) => c.source === "applied").length;
-  const recommendedCount = allCandidates.filter((c) => c.source === "recommended").length;
-  const starredCount = allCandidates.filter((c) => starredIds.has(c.id)).length;
+  const tabInsights = useMemo(() => {
+    const source = tabCandidates;
+    const n = source.length;
+    const avgMatch = n > 0
+      ? Math.round(source.reduce((sum, c) => sum + (c.matchScore || 0), 0) / n)
+      : 0;
+    const topScore = n > 0 ? Math.max(...source.map((c) => c.matchScore || 0)) : 0;
+    const highFit = source.filter((c) => (c.matchScore || 0) >= 85).length;
+    const lockedInTab = source.filter((c) => c.locked && !unlockedIds.has(c.id)).length;
+    const starredInTab = source.filter((c) => starredIds.has(c.id)).length;
+    return { n, avgMatch, topScore, highFit, lockedInTab, starredInTab };
+  }, [tabCandidates, unlockedIds, starredIds]);
   const handleUnlock = (id) => {
     setUnlockedIds((prev) => {
       const next = new Set(prev);
       next.add(id);
       return next;
     });
+    setCandidateStatuses((prev) =>
+      prev[id] ? prev : { ...prev, [id]: DEFAULT_CANDIDATE_STATUS },
+    );
+  };
+
+  const handleChangeCandidateStatus = (id, nextStatusId) => {
+    if (!CANDIDATE_STATUS_MAP[nextStatusId]) return;
+    setCandidateStatuses((prev) => ({ ...prev, [id]: nextStatusId }));
   };
 
   const detailCandidates = useMemo(() => candidates, [candidates]);
@@ -4496,7 +4797,7 @@ function CandidateMatchView({ job, onBack }) {
           maxWidth: "none",
           px: { xs: theme.spacing(1.75), md: theme.spacing(2.5) },
           pt: { xs: 1.75, sm: 2 },
-          pb: { xs: 2, sm: 2.25 },
+          pb: { xs: 2, sm: 0 },
           mb: 3,
         })}
       >
@@ -4568,7 +4869,7 @@ function CandidateMatchView({ job, onBack }) {
                     onClick={() => setJdDialogOpen(true)}
                     sx={{ color: SHELL_MUTED, "&:hover": { color: SHELL_INK, bgcolor: "rgba(23,18,14,0.04)" } }}
                   >
-                    <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />
+                    <ArticleOutlinedIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -4634,108 +4935,161 @@ function CandidateMatchView({ job, onBack }) {
             </Stack>
           </Stack>
 
-          {/* Activity metric cards */}
+          {/* Candidate pool tabs: minimal underlined tab bar */}
           {(() => {
-            const metrics = [
+            const tabs = [
               {
+                key: "recommendations",
                 label: "Recommendations",
-                value: job.matches || 0,
+                value: recommendedCount,
+                Icon: AutoAwesomeOutlinedIcon,
                 sub: !isClosed && (job.newMatches24h || 0) > 0 ? aiMatchesNewRelativeLabel(job.newMatches24h) : null,
                 subColor: "#15803d",
-                Icon: AutoAwesomeOutlinedIcon,
-                iconBg: "rgba(248,114,58,0.1)",
-                iconColor: SHELL_PRIMARY,
               },
               {
+                key: "applied",
                 label: "Applied",
-                value: job.applied || 0,
+                value: appliedCount,
+                Icon: PersonAddAlt1OutlinedIcon,
                 sub: !isClosed && (job.appliedThisWeek || 0) > 0 ? `${job.appliedThisWeek} this week` : null,
                 subColor: "#2563eb",
-                Icon: PersonAddAlt1OutlinedIcon,
-                iconBg: "rgba(37,99,235,0.1)",
-                iconColor: "#2563eb",
               },
               {
+                key: "unlocked",
                 label: "Unlocked",
-                value: job.unlocked || 0,
+                value: unlockedCount,
+                Icon: LockOpenRoundedIcon,
                 sub: `${unlockRate}% of pool`,
                 subColor: SHELL_MUTED,
-                Icon: LockOpenRoundedIcon,
-                iconBg: "rgba(124,58,237,0.1)",
-                iconColor: "#7c3aed",
               },
             ];
             return (
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{
-                  mt: 2,
-                  flexWrap: { xs: "wrap", sm: "nowrap" },
-                  gap: { xs: 1.5, sm: 0 },
-                }}
-              >
-                {metrics.map((m) => (
-                  <Box
-                    key={m.label}
-                    sx={{
-                      flex: { xs: "1 1 calc(50% - 6px)", sm: "1 1 0" },
-                      minWidth: { xs: "calc(50% - 6px)", sm: 0 },
-                      maxWidth: { sm: "none" },
-                      borderRadius: "14px",
-                      border: "1px solid rgba(200,188,174,0.58)",
-                      bgcolor: "rgba(255,255,255,0.65)",
-                      px: 2,
-                      py: 2,
-                      position: "relative",
-                      overflow: "hidden",
-                      boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset",
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5}>
-                      <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ minWidth: 0, flex: 1 }}>
-                        <Box
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "9px",
-                            bgcolor: m.iconBg,
-                            display: "grid",
-                            placeItems: "center",
-                            flexShrink: 0,
-                            mt: 0.1,
-                          }}
-                        >
-                          <m.Icon sx={{ fontSize: 15, color: m.iconColor }} aria-hidden />
-                        </Box>
-                        <Box sx={{ minWidth: 0, pt: 0.15 }}>
-                          <Typography sx={{ fontSize: "0.6875rem", fontWeight: 700, color: SHELL_MUTED, letterSpacing: "0.03em", textTransform: "uppercase", lineHeight: 1.25 }}>
-                            {m.label}
-                          </Typography>
-                          {m.sub ? (
-                            <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: m.subColor, lineHeight: 1.35, mt: 0.45 }}>
-                              {m.sub}
-                            </Typography>
-                          ) : null}
-                        </Box>
-                      </Stack>
-                      <Typography
+              <Box sx={{ mt: 2 }}>
+                <Box
+                  role="tablist"
+                  aria-label="Candidate pool"
+                  sx={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "stretch",
+                    gap: 0.5,
+                    borderBottom: "1px solid rgba(200,188,174,0.4)",
+                  }}
+                >
+                  {tabs.map((t) => {
+                    const isActive = activeTab === t.key;
+                    return (
+                      <Box
+                        key={t.key}
+                        component="button"
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-controls="candidate-pool-panel"
+                        tabIndex={isActive ? 0 : -1}
+                        onClick={() => {
+                          if (!isActive) {
+                            setActiveTab(t.key);
+                            setSourceFilter("all");
+                          }
+                        }}
                         sx={{
-                          fontSize: { xs: "1.5rem", sm: "1.625rem" },
-                          fontWeight: 800,
-                          color: SHELL_INK,
-                          lineHeight: 1,
-                          letterSpacing: "-0.04em",
-                          textAlign: "right",
-                          flexShrink: 0,
+                          position: "relative",
+                          appearance: "none",
+                          background: "transparent",
+                          border: 0,
+                          m: 0,
+                          px: 0,
+                          pt: 0.5,
+                          pb: 1.25,
+                          mr: 2.5,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.75,
+                          cursor: "pointer",
+                          font: "inherit",
+                          color: isActive ? SHELL_INK : SHELL_MUTED,
+                          transition: "color 160ms cubic-bezier(0.23, 1, 0.32, 1)",
+                          "&:hover": {
+                            color: SHELL_INK,
+                            "& .job-tab-icon": { color: isActive ? SHELL_PRIMARY : SHELL_INK },
+                          },
+                          "&:focus-visible": {
+                            outline: "2px solid rgba(248,114,58,0.55)",
+                            outlineOffset: 4,
+                            borderRadius: 4,
+                          },
+                          "&::after": {
+                            content: '""',
+                            position: "absolute",
+                            left: 0,
+                            right: 0,
+                            bottom: -1,
+                            height: 2,
+                            borderRadius: 2,
+                            bgcolor: SHELL_PRIMARY,
+                            transformOrigin: "center",
+                            transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                            transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                          },
                         }}
                       >
-                        {m.value}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
+                        <Box
+                          className="job-tab-icon"
+                          component="span"
+                          aria-hidden
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 16,
+                            height: 16,
+                            color: isActive ? SHELL_PRIMARY : SHELL_MUTED,
+                            transform: isActive ? "scale(1.05)" : "scale(1)",
+                            transition: "color 180ms ease-out, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                          }}
+                        >
+                          <t.Icon sx={{ fontSize: 16 }} />
+                        </Box>
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontSize: "0.875rem",
+                            fontWeight: isActive ? 600 : 500,
+                            letterSpacing: "-0.005em",
+                            lineHeight: 1.3,
+                            transition: "font-weight 160ms ease-out",
+                          }}
+                        >
+                          {t.label}
+                        </Typography>
+                        <Box
+                          component="span"
+                          aria-hidden
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 20,
+                            height: 20,
+                            px: 0.6,
+                            borderRadius: 999,
+                            bgcolor: isActive ? "rgba(248,114,58,0.12)" : "rgba(107,99,92,0.08)",
+                            color: isActive ? SHELL_PRIMARY : SHELL_MUTED,
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                            fontVariantNumeric: "tabular-nums",
+                            lineHeight: 1,
+                            transition: "background-color 180ms ease-out, color 180ms ease-out",
+                          }}
+                        >
+                          {t.value}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
             );
           })()}
         </Box>
@@ -4746,15 +5100,178 @@ function CandidateMatchView({ job, onBack }) {
 
       {/* Candidates section (on page canvas, below white job panel) */}
       <Box sx={{ pt: "4px", mb: 2 }}>
-        <Stack direction="row" alignItems="flex-end" justifyContent="space-between" flexWrap="wrap" useFlexGap sx={{ rowGap: 1, columnGap: 2, mb: 1.5 }}>
-          <Box>
-            <Typography sx={{ fontSize: "1rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.01em", mb: 0 }}>
-              Matched Candidates
-            </Typography>
-            <Typography sx={{ fontSize: "0.8125rem", color: "rgba(107,99,92,0.65)", fontWeight: 400, mb: 0 }}>
-              Ranked for fit against this role
-            </Typography>
-          </Box>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap sx={{ rowGap: 1, columnGap: 2, mb: 1.5 }}>
+          {(() => {
+            const chips = [];
+            if (tabInsights.n === 0) {
+              chips.push({
+                key: "empty",
+                Icon: HelpOutlineRoundedIcon,
+                label: activeTab === "applied"
+                  ? "No applicants yet"
+                  : activeTab === "unlocked"
+                    ? "Nothing unlocked yet"
+                    : "No matches yet",
+                muted: true,
+              });
+            } else if (activeTab === "recommendations") {
+              chips.push({
+                key: "high",
+                Icon: AutoAwesomeIcon,
+                value: tabInsights.highFit,
+                label: "high-fit (85+)",
+                accent: tabInsights.highFit > 0 ? SHELL_PRIMARY : null,
+              });
+              if (!isClosed && (job.newMatches24h || 0) > 0) {
+                chips.push({
+                  key: "fresh",
+                  Icon: ArrowForwardRoundedIcon,
+                  value: `+${job.newMatches24h}`,
+                  label: "since yesterday",
+                  accent: "#15803d",
+                });
+              }
+              chips.push({
+                key: "avg",
+                Icon: GraphicEqRoundedIcon,
+                value: `${tabInsights.avgMatch}%`,
+                label: "avg fit",
+              });
+            } else if (activeTab === "applied") {
+              if (!isClosed && (job.appliedThisWeek || 0) > 0) {
+                chips.push({
+                  key: "week",
+                  Icon: CalendarTodayOutlinedIcon,
+                  value: job.appliedThisWeek,
+                  label: "this week",
+                  accent: "#2563eb",
+                });
+              }
+              if (tabInsights.lockedInTab > 0) {
+                chips.push({
+                  key: "locked",
+                  Icon: LockOutlinedIcon,
+                  value: tabInsights.lockedInTab,
+                  label: "awaiting unlock",
+                });
+              }
+              chips.push({
+                key: "avg",
+                Icon: GraphicEqRoundedIcon,
+                value: `${tabInsights.avgMatch}%`,
+                label: "avg fit",
+              });
+            } else if (activeTab === "unlocked") {
+              chips.push({
+                key: "rate",
+                Icon: LockOpenRoundedIcon,
+                value: `${unlockRate}%`,
+                label: "of full pool",
+                accent: "#7c3aed",
+              });
+              chips.push({
+                key: "avg",
+                Icon: GraphicEqRoundedIcon,
+                value: `${tabInsights.avgMatch}%`,
+                label: "avg fit",
+              });
+              if (tabInsights.starredInTab > 0) {
+                chips.push({
+                  key: "starred",
+                  Icon: StarRoundedIcon,
+                  value: tabInsights.starredInTab,
+                  label: "starred",
+                  accent: SHORTLIST_STAR_ACTIVE,
+                });
+              }
+            }
+
+            return (
+              <Stack
+                key={activeTab}
+                direction="row"
+                alignItems="center"
+                flexWrap="wrap"
+                useFlexGap
+                sx={{
+                  rowGap: 0.75,
+                  columnGap: 1,
+                  minWidth: 0,
+                  "@keyframes jobInsightChipIn": {
+                    from: { opacity: 0, transform: "translateY(-3px)" },
+                    to: { opacity: 1, transform: "translateY(0)" },
+                  },
+                }}
+              >
+                {chips.map((chip, idx) => {
+                  const isAccented = Boolean(chip.accent);
+                  const swatch = chip.accent || SHELL_INK;
+                  return (
+                    <Box
+                      key={chip.key}
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 0.6,
+                        pl: 1.1,
+                        pr: 1.25,
+                        py: 0.55,
+                        borderRadius: 999,
+                        border: "1px solid rgba(200,188,174,0.45)",
+                        bgcolor: isAccented
+                          ? `${swatch}0D`
+                          : "rgba(255,255,255,0.55)",
+                        backdropFilter: "blur(6px)",
+                        animation: `jobInsightChipIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both`,
+                        animationDelay: `${idx * 40}ms`,
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 14,
+                          height: 14,
+                          color: isAccented ? swatch : SHELL_MUTED,
+                        }}
+                      >
+                        <chip.Icon sx={{ fontSize: 14 }} />
+                      </Box>
+                      {chip.value != null && (
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontSize: "0.8125rem",
+                            fontWeight: 700,
+                            letterSpacing: "-0.01em",
+                            color: isAccented ? swatch : SHELL_INK,
+                            fontVariantNumeric: "tabular-nums",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {chip.value}
+                        </Typography>
+                      )}
+                      <Typography
+                        component="span"
+                        sx={{
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                          color: chip.muted ? SHELL_MUTED : "rgba(107,99,92,0.85)",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {chip.label}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            );
+          })()}
           <Stack direction="row" alignItems="center" spacing={1}>
             <Button
               type="button"
@@ -4800,13 +5317,7 @@ function CandidateMatchView({ job, onBack }) {
                   "&:hover": { borderColor: "rgba(220,212,202,0.9)", bgcolor: "rgba(107,99,92,0.04)" },
                 }}
               >
-                {sourceFilter === "all"
-                  ? "Filter: All"
-                  : sourceFilter === "applied"
-                    ? "Filter: Applied"
-                    : sourceFilter === "recommended"
-                      ? "Filter: Recommended"
-                      : "Filter: Starred"}
+                {sourceFilter === "starred" ? "Filter: Starred" : "Filter: All"}
               </Button>
               {filterMenuOpen && (
                 <Box
@@ -4825,10 +5336,8 @@ function CandidateMatchView({ job, onBack }) {
                   }}
                 >
                   {[
-                    { key: "all", label: `All candidates (${allCandidates.length})` },
-                    { key: "applied", label: `Applied only (${appliedCount})` },
-                    { key: "recommended", label: `Recommended only (${recommendedCount})` },
-                    { key: "starred", label: `Starred (${starredCount})` },
+                    { key: "all", label: `All in this tab (${tabCandidates.length})` },
+                    { key: "starred", label: `Starred only (${starredCount})` },
                   ].map((option) => {
                     const active = sourceFilter === option.key;
                     return (
@@ -4899,7 +5408,7 @@ function CandidateMatchView({ job, onBack }) {
       </Box>
 
       {candidates.length > 0 ? (
-        <Stack sx={{ gap: "16px" }}>
+        <Stack id="candidate-pool-panel" role="tabpanel" sx={{ gap: "16px" }}>
           {candidates.map((candidate, i) => (
             <CandidateCard
               key={candidate.id}
@@ -4910,11 +5419,16 @@ function CandidateMatchView({ job, onBack }) {
               index={i}
               starred={starredIds.has(candidate.id)}
               onToggleStar={handleToggleStar}
+              status={candidateStatuses[candidate.id]}
+              onChangeStatus={handleChangeCandidateStatus}
+              showPipelineStatus={activeTab === "unlocked"}
             />
           ))}
         </Stack>
       ) : (
         <Box
+          id="candidate-pool-panel"
+          role="tabpanel"
           sx={{
             borderRadius: "16px",
             border: "1px dashed rgba(220,212,202,0.65)",
@@ -4925,8 +5439,12 @@ function CandidateMatchView({ job, onBack }) {
         >
           <Typography sx={{ fontSize: "0.9375rem", fontWeight: 600, color: SHELL_MUTED }}>
             {sourceFilter === "starred"
-              ? "No starred candidates for this job yet. Use the star on a card or in a profile to mark people for quick reference later."
-              : "No matched candidates yet"}
+              ? "No starred candidates in this tab yet. Star a candidate from their card or profile to save them here."
+              : activeTab === "applied"
+                ? "No candidates have applied to this role yet."
+                : activeTab === "unlocked"
+                  ? "You haven't unlocked any profiles for this role yet. Unlock a candidate from their card to see full details."
+                  : "No recommended matches yet for this role."}
           </Typography>
         </Box>
       )}
@@ -5162,7 +5680,13 @@ function JobsTabContent({ onCreateJob, selectedJob, onSelectedJobChange }) {
   }, [locationFilter, locationOptions]);
 
   if (selectedJob) {
-    return <CandidateMatchView job={selectedJob} onBack={() => onSelectedJobChange(null)} />;
+    return (
+      <CandidateMatchView
+        key={selectedJob.id}
+        job={selectedJob}
+        onBack={() => onSelectedJobChange(null)}
+      />
+    );
   }
 
   return (
@@ -6785,7 +7309,7 @@ function TeamTabContent({ autoOpenInvite = false, onAutoOpenInviteHandled }) {
                 </IconButton>
               </Stack>
             </Box>
-            <Box sx={{ pt: "18px", pb: "18px", px: 2.25, borderTop: "1px solid rgba(233,227,220,0.8)", borderBottom: "1px solid rgba(233,227,220,0.8)" }}>
+            <Box sx={{ pt: "18px", pb: 0, px: 2.25, borderTop: "1px solid rgba(233,227,220,0.8)", borderBottom: "1px solid rgba(233,227,220,0.8)" }}>
               <Stack
                 spacing={1.55}
                 sx={{

@@ -79,6 +79,48 @@ const ORG_TYPES = [
   { id: "enterprise", label: "Enterprise", hint: "Large organization" },
 ];
 
+/** Indian states and UTs with representative cities for onboarding location pickers. */
+const INDIA_STATE_CITIES = {
+  "Andhra Pradesh": ["Amaravati", "Anantapur", "Guntur", "Kadapa", "Kurnool", "Nellore", "Rajahmundry", "Tirupati", "Vijayawada", "Visakhapatnam"],
+  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
+  Assam: ["Dibrugarh", "Guwahati", "Jorhat", "Nagaon", "Silchar", "Tezpur"],
+  Bihar: ["Bhagalpur", "Darbhanga", "Gaya", "Muzaffarpur", "Patna", "Purnia"],
+  Chhattisgarh: ["Bhilai", "Bilaspur", "Durg", "Korba", "Raipur", "Rajnandgaon"],
+  Goa: ["Mapusa", "Margao", "Panaji", "Vasco da Gama"],
+  Gujarat: ["Ahmedabad", "Bhavnagar", "Gandhinagar", "Jamnagar", "Rajkot", "Surat", "Vadodara"],
+  Haryana: ["Ambala", "Faridabad", "Gurugram", "Karnal", "Panipat", "Rohtak"],
+  "Himachal Pradesh": ["Dharamshala", "Manali", "Mandi", "Shimla", "Solan"],
+  Jharkhand: ["Bokaro", "Deoghar", "Dhanbad", "Jamshedpur", "Ranchi"],
+  Karnataka: ["Belagavi", "Bengaluru", "Hubballi", "Kalaburagi", "Mangaluru", "Mysuru"],
+  Kerala: ["Kochi", "Kollam", "Kozhikode", "Thiruvananthapuram", "Thrissur"],
+  "Madhya Pradesh": ["Bhopal", "Gwalior", "Indore", "Jabalpur", "Ujjain"],
+  Maharashtra: ["Aurangabad", "Mumbai", "Nagpur", "Nashik", "Pune", "Thane"],
+  Manipur: ["Bishnupur", "Imphal", "Thoubal"],
+  Meghalaya: ["Jowai", "Shillong", "Tura"],
+  Mizoram: ["Aizawl", "Lunglei"],
+  Nagaland: ["Dimapur", "Kohima", "Mokokchung"],
+  Odisha: ["Bhubaneswar", "Cuttack", "Puri", "Rourkela", "Sambalpur"],
+  Punjab: ["Amritsar", "Jalandhar", "Ludhiana", "Mohali", "Patiala"],
+  Rajasthan: ["Ajmer", "Bikaner", "Jaipur", "Jodhpur", "Kota", "Udaipur"],
+  Sikkim: ["Gangtok", "Namchi"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli", "Vellore"],
+  Telangana: ["Hyderabad", "Karimnagar", "Nizamabad", "Warangal"],
+  Tripura: ["Agartala", "Dharmanagar", "Udaipur"],
+  "Uttar Pradesh": ["Agra", "Ghaziabad", "Kanpur", "Lucknow", "Noida", "Varanasi"],
+  Uttarakhand: ["Dehradun", "Haridwar", "Haldwani", "Nainital", "Rishikesh"],
+  "West Bengal": ["Asansol", "Durgapur", "Howrah", "Kolkata", "Siliguri"],
+  "Andaman and Nicobar Islands": ["Port Blair"],
+  Chandigarh: ["Chandigarh"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa"],
+  Delhi: ["Central Delhi", "New Delhi", "North Delhi", "South Delhi"],
+  "Jammu and Kashmir": ["Anantnag", "Jammu", "Srinagar"],
+  Ladakh: ["Kargil", "Leh"],
+  Lakshadweep: ["Agatti", "Kavaratti"],
+  Puducherry: ["Karaikal", "Mahe", "Puducherry", "Yanam"],
+};
+
+const INDIAN_STATES_SORTED = Object.keys(INDIA_STATE_CITIES).sort((a, b) => a.localeCompare(b));
+
 const COUNTRY_CODES = [
   { code: "+1", flag: "🇺🇸" },
   { code: "+44", flag: "🇬🇧" },
@@ -478,26 +520,84 @@ export default function RecruiterOnboardingScreen({ onComplete }) {
                     </Box>
 
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                      <TextField
-                        fullWidth
-                        label="State / region"
-                        placeholder="e.g. Texas"
-                        value={stateRegion}
-                        onChange={(e) => setStateRegion(e.target.value)}
-                        error={touched && !stateRegion.trim()}
-                        helperText={touched && !stateRegion.trim() ? "Enter a state or region." : ""}
-                        sx={fieldSx}
-                      />
-                      <TextField
-                        fullWidth
-                        label="City"
-                        placeholder="e.g. Austin"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        error={touched && !city.trim()}
-                        helperText={touched && !city.trim() ? "Enter a city." : ""}
-                        sx={fieldSx}
-                      />
+                      <FormControl fullWidth error={touched && !stateRegion} sx={fieldSx}>
+                        <InputLabel id="onboarding-state-label" shrink>
+                          State
+                        </InputLabel>
+                        <Select
+                          labelId="onboarding-state-label"
+                          label="State"
+                          value={stateRegion}
+                          onChange={(e) => {
+                            setStateRegion(e.target.value);
+                            setCity("");
+                          }}
+                          displayEmpty
+                          renderValue={(v) =>
+                            v ? (
+                              v
+                            ) : (
+                              <Typography component="span" sx={{ color: MUTED, fontWeight: 400 }}>
+                                Select state
+                              </Typography>
+                            )
+                          }
+                          MenuProps={SELECT_MENU_PROPS}
+                        >
+                          <MenuItem value="" disabled>
+                            <em>Select state</em>
+                          </MenuItem>
+                          {INDIAN_STATES_SORTED.map((name) => (
+                            <MenuItem key={name} value={name}>
+                              {name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {touched && !stateRegion ? <FormHelperText>Select a state.</FormHelperText> : null}
+                      </FormControl>
+                      <FormControl fullWidth error={touched && Boolean(stateRegion) && !city} disabled={!stateRegion} sx={fieldSx}>
+                        <InputLabel id="onboarding-city-label" shrink>
+                          City
+                        </InputLabel>
+                        <Select
+                          labelId="onboarding-city-label"
+                          label="City"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          displayEmpty
+                          renderValue={(v) => {
+                            if (!stateRegion) {
+                              return (
+                                <Typography component="span" sx={{ color: MUTED, fontWeight: 400 }}>
+                                  Select state first
+                                </Typography>
+                              );
+                            }
+                            if (!v) {
+                              return (
+                                <Typography component="span" sx={{ color: MUTED, fontWeight: 400 }}>
+                                  Select city
+                                </Typography>
+                              );
+                            }
+                            return v;
+                          }}
+                          MenuProps={SELECT_MENU_PROPS}
+                        >
+                          <MenuItem value="" disabled>
+                            <em>{stateRegion ? "Select city" : "Select state first"}</em>
+                          </MenuItem>
+                          {(INDIA_STATE_CITIES[stateRegion] ?? [])
+                            .slice()
+                            .sort((a, b) => a.localeCompare(b))
+                            .map((name) => (
+                              <MenuItem key={name} value={name}>
+                                {name}
+                              </MenuItem>
+                            ))}
+                        </Select>
+                        {touched && stateRegion && !city ? <FormHelperText>Select a city.</FormHelperText> : null}
+                      </FormControl>
                     </Stack>
                   </Stack>
                 )}
