@@ -2644,18 +2644,16 @@ function CandidateCard({
                       height: 34,
                       flexShrink: 0,
                       color: SHELL_MUTED,
-                      border: `1px solid ${SHELL_PRIMARY}22`,
+                      border: "none",
                       borderRadius: "10px",
                       bgcolor: "transparent",
                       "&:hover": {
                         color: SHELL_INK,
                         bgcolor: "rgba(23,18,14,0.05)",
-                        borderColor: `${SHELL_PRIMARY}44`,
                       },
                       ...(moreMenuOpen && {
                         color: SHELL_INK,
                         bgcolor: "rgba(23,18,14,0.06)",
-                        borderColor: `${SHELL_PRIMARY}44`,
                       }),
                     }}
                   >
