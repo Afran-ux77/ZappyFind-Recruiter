@@ -3,11 +3,13 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Box,
   Button,
   Collapse,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Fade,
@@ -67,6 +69,9 @@ import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import RecruiterAppShell, {
   SHELL_INK,
   SHELL_MUTED,
@@ -1253,6 +1258,9 @@ function simulateCareerPageExtraction() {
   };
 }
 
+/** Shown in reminder audit tooltip until recruiter identity is wired from auth */
+const HM_REMINDER_SENT_BY_LABEL = "You";
+
 export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [phase, setPhase] = useState("choose");
   const [scratchExpanded, setScratchExpanded] = useState(() => ({ ...SCRATCH_EXPANDED_DEFAULT }));
@@ -1299,6 +1307,17 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [profileMandatoryAddExpanded, setProfileMandatoryAddExpanded] = useState(false);
   const [profileNiceAddExpanded, setProfileNiceAddExpanded] = useState(false);
   const [hmSent, setHmSent] = useState(false);
+  const [hmReminderDialogOpen, setHmReminderDialogOpen] = useState(false);
+  const [lastHmReminder, setLastHmReminder] = useState(null);
+  const lastHmReminderAuditTitle = useMemo(() => {
+    if (!lastHmReminder) return "";
+    const when = new Date(lastHmReminder.at).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    return `Last reminder was sent on ${when} by ${lastHmReminder.byLabel}.`;
+  }, [lastHmReminder]);
+
   const [skipHmDialogOpen, setSkipHmDialogOpen] = useState(false);
   const [sendHmDialogOpen, setSendHmDialogOpen] = useState(false);
   /** True while send dialog exit runs so skip paper stays recessed until unstack can animate smoothly */
@@ -2318,7 +2337,9 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                         size={{ xs: 12, md: 8 }}
                         sx={{
                           minWidth: 0,
-                          width: "fit-content",
+                          width: { xs: "100%", md: "fit-content" },
+                          maxWidth: "100%",
+                          justifySelf: { xs: "stretch", md: "center" },
                           display: "flex",
                           justifyContent: { xs: "center", md: "center" },
                         }}
@@ -3360,44 +3381,48 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               >
                 Competencies we recommend
               </Typography>
-              <Typography
-                component="p"
-                sx={{
-                  m: 0,
-                  fontSize: "0.75rem",
-                  lineHeight: 1.55,
-                  letterSpacing: "-0.01em",
-                  color: SHELL_MUTED,
-                  fontWeight: 500,
-                }}
-              >
-                {"Adjust levels, remove what doesn\u2019t apply, or add your own."}
-              </Typography>
               <Box
                 component="aside"
-                aria-label="How competency choices affect candidate matching"
+                aria-label="Mapped competencies: refine, align with hiring manager, save for matching"
                 sx={{
-                  pl: 1.5,
-                  pr: 1.5,
-                  py: 1.1,
-                  borderRadius: "0 12px 12px 0",
-                  borderLeft: "3px solid rgba(248, 114, 58, 0.5)",
-                  bgcolor: "rgba(248, 114, 58, 0.07)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1,
+                  pl: 1.1,
+                  pr: 1.15,
+                  py: 0.75,
+                  borderRadius: "10px",
+                  border: "1px solid rgba(191, 219, 254, 0.65)",
+                  bgcolor: "rgba(239, 246, 255, 0.92)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
                 }}
               >
+                <InfoOutlinedIcon
+                  aria-hidden
+                  sx={{
+                    fontSize: 18,
+                    color: "#2563eb",
+                    flexShrink: 0,
+                    mt: "0.5px",
+                    opacity: 0.92,
+                  }}
+                />
                 <Typography
                   component="p"
                   sx={{
                     m: 0,
-                    fontSize: "0.8125rem",
-                    lineHeight: 1.55,
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: "12px",
+                    lineHeight: 1.5,
                     letterSpacing: "-0.01em",
-                    color: "rgba(36, 31, 26, 0.88)",
+                    color: "#1e3a8a",
                     fontWeight: 500,
                   }}
                 >
-                  When you save this job, we use the competency mix you finalize below to rank suggestions. You should see candidates who line up closely with the must-haves and nice-to-haves you set here.
+                  {jobTitle.trim()
+                    ? `We mapped these competencies to your ${jobTitle.trim()} role. Refine the list, align with your hiring manager, then save. ZappyFind matches candidates to the profile you lock in here.`
+                    : "We mapped these competencies to this role. Refine the list, align with your hiring manager, then save. ZappyFind matches candidates to the profile you lock in here."}
                 </Typography>
               </Box>
             </Stack>
@@ -3813,58 +3838,229 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             >
               <Box sx={{ p: { xs: 2, md: 2.5 }, position: "relative", zIndex: 2 }}>
                 {/* Header row */}
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  alignItems={{ xs: "flex-start", sm: "flex-start" }}
-                  justifyContent="space-between"
-                  spacing={1.5}
-                  sx={{ mb: 2 }}
-                >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.65 }}>
-                      <Box sx={{ width: 28, height: 28, borderRadius: "8px", background: "linear-gradient(135deg, rgba(248,114,58,0.12) 0%, rgba(248,114,58,0.06) 100%)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                        <GroupAddOutlinedIcon sx={{ fontSize: 16, color: SHELL_PRIMARY }} />
-                      </Box>
-                      <Typography
-                        component="h2"
-                        sx={{ fontSize: "0.9375rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.25, m: 0 }}
+                <Stack spacing={1.75} sx={{ mb: 2 }}>
+                  {hmSent ? (
+                    <Stack
+                      direction={{ xs: "column-reverse", sm: "row" }}
+                      spacing={2}
+                      justifyContent="space-between"
+                      alignItems={{ xs: "stretch", sm: "flex-start" }}
+                      sx={{ width: "100%" }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1.25}
+                        alignItems="flex-start"
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                        }}
                       >
-                        Get your hiring manager{"\u2019"}s sign-off
-                      </Typography>
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "10px",
+                            bgcolor: "rgba(22, 163, 74, 0.12)",
+                            display: "grid",
+                            placeItems: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <CheckCircleOutlineRoundedIcon sx={{ fontSize: 20, color: "#15803d" }} />
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            component="h2"
+                            sx={{
+                              fontSize: "0.9375rem",
+                              fontWeight: 700,
+                              color: SHELL_INK,
+                              letterSpacing: "-0.02em",
+                              lineHeight: 1.25,
+                              m: 0,
+                              mb: 0.5,
+                            }}
+                          >
+                            Ideal candidate profile sent
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontSize: "0.78rem",
+                              color: SHELL_MUTED,
+                              lineHeight: 1.55,
+                              maxWidth: "min(100%, 36rem)",
+                              width: "fit-content",
+                              mb: 1,
+                            }}
+                          >
+                            {hmEmails.length === 1
+                              ? "Your hiring manager has the link to review this ideal profile, adjust competencies if needed, and send their take back to you."
+                              : "Your hiring managers have the link to review this ideal profile, adjust competencies if needed, and send their take back to you."}
+                          </Typography>
+                          <Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.65 }}>
+                            {hmEmails.map((email) => (
+                              <Chip
+                                key={email}
+                                label={email}
+                                size="small"
+                                sx={{
+                                  borderRadius: "8px",
+                                  fontSize: "0.7rem",
+                                  fontWeight: 600,
+                                  bgcolor: "rgba(248,114,58,0.08)",
+                                  color: SHELL_INK,
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      </Stack>
+                      <Stack
+                        spacing={0.75}
+                        sx={{
+                          flexShrink: 0,
+                          alignSelf: { xs: "flex-end", sm: "flex-start" },
+                          width: { xs: "100%", sm: "auto" },
+                          maxWidth: { sm: 440 },
+                        }}
+                      >
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={1}
+                          alignItems={{ xs: "stretch", sm: "center" }}
+                          justifyContent={{ xs: "flex-end", sm: "flex-start" }}
+                        >
+                          <Tooltip
+                            title={lastHmReminderAuditTitle}
+                            placement="top"
+                            arrow
+                            enterDelay={200}
+                            enterNextDelay={200}
+                            enterTouchDelay={0}
+                            disableHoverListener={!lastHmReminder}
+                            disableFocusListener={!lastHmReminder}
+                            disableTouchListener={!lastHmReminder}
+                            slotProps={{
+                              popper: { sx: { zIndex: 9999 } },
+                              tooltip: {
+                                sx: { maxWidth: 320, textAlign: "left", lineHeight: 1.45, fontSize: "0.75rem" },
+                              },
+                            }}
+                          >
+                            <Button
+                              variant="text"
+                              startIcon={<NotificationsActiveOutlinedIcon sx={{ fontSize: "18px !important", color: SHELL_PRIMARY }} />}
+                              onClick={() => setHmReminderDialogOpen(true)}
+                              sx={{
+                                borderRadius: "10px",
+                                textTransform: "none",
+                                fontWeight: 700,
+                                fontSize: "0.8125rem",
+                                px: 1.25,
+                                py: 0.95,
+                                minWidth: 0,
+                                color: SHELL_PRIMARY,
+                                border: "none",
+                                boxShadow: "none",
+                                whiteSpace: { sm: "nowrap" },
+                                "&:hover": {
+                                  bgcolor: "rgba(248, 114, 58, 0.08)",
+                                  border: "none",
+                                  boxShadow: "none",
+                                },
+                              }}
+                            >
+                              Send reminder
+                            </Button>
+                          </Tooltip>
+                          <Button
+                            variant="outlined"
+                            startIcon={<ManageAccountsOutlinedIcon sx={{ fontSize: "18px !important", color: SHELL_PRIMARY }} />}
+                            onClick={() => {
+                              setSendHmLeavingStacked(false);
+                              setHmEmailError("");
+                              setSendHmDialogOpen(true);
+                            }}
+                            sx={{
+                              borderRadius: "10px",
+                              textTransform: "none",
+                              fontWeight: 700,
+                              fontSize: "0.8125rem",
+                              px: 2.25,
+                              py: 0.95,
+                              color: SHELL_PRIMARY,
+                              bgcolor: "#fff !important",
+                              border: "1px solid rgba(248,114,58,0.55) !important",
+                              boxShadow: "none",
+                              whiteSpace: { sm: "nowrap" },
+                              "&:hover": {
+                                bgcolor: "#fff !important",
+                                border: "1px solid rgba(248,114,58,0.75) !important",
+                                boxShadow: "none",
+                              },
+                            }}
+                          >
+                            Change hiring manager
+                          </Button>
+                        </Stack>
+                      </Stack>
                     </Stack>
-                    <Typography sx={{ fontSize: "0.78rem", color: SHELL_MUTED, lineHeight: 1.55, maxWidth: "100%" }}>
-                      Share this profile with your hiring manager to review competency priorities and approve the bar. Once aligned, expect fewer mismatched candidates and faster path to offer.
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important", color: SHELL_PRIMARY }} />}
-                    onClick={() => {
-                      setSendHmLeavingStacked(false);
-                      setSendHmDialogOpen(true);
-                    }}
-                    sx={{
-                      flexShrink: 0,
-                      borderRadius: "10px",
-                      textTransform: "none",
-                      fontWeight: 700,
-                      fontSize: "0.8125rem",
-                      px: 2.25,
-                      py: 0.95,
-                      color: SHELL_PRIMARY,
-                      bgcolor: "#fff !important",
-                      border: "1px solid rgba(248,114,58,0.55) !important",
-                      boxShadow: "none",
-                      whiteSpace: "nowrap",
-                      "&:hover": {
-                        bgcolor: "#fff !important",
-                        border: "1px solid rgba(248,114,58,0.75) !important",
-                        boxShadow: "none",
-                      },
-                    }}
-                  >
-                    Send to hiring manager
-                  </Button>
+                  ) : (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      alignItems={{ xs: "flex-start", sm: "flex-start" }}
+                      justifyContent="space-between"
+                      spacing={1.5}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.65 }}>
+                          <Box sx={{ width: 28, height: 28, borderRadius: "8px", background: "linear-gradient(135deg, rgba(248,114,58,0.12) 0%, rgba(248,114,58,0.06) 100%)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                            <GroupAddOutlinedIcon sx={{ fontSize: 16, color: SHELL_PRIMARY }} />
+                          </Box>
+                          <Typography
+                            component="h2"
+                            sx={{ fontSize: "0.9375rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.25, m: 0 }}
+                          >
+                            Get your hiring manager{"\u2019"}s sign-off
+                          </Typography>
+                        </Stack>
+                        <Typography sx={{ fontSize: "0.78rem", color: SHELL_MUTED, lineHeight: 1.55, maxWidth: "100%" }}>
+                          Share this profile with your hiring manager to review competency priorities and approve the bar. Once aligned, expect fewer mismatched candidates and faster path to offer.
+                        </Typography>
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important", color: SHELL_PRIMARY }} />}
+                        onClick={() => {
+                          setSendHmLeavingStacked(false);
+                          setHmEmailError("");
+                          setSendHmDialogOpen(true);
+                        }}
+                        sx={{
+                          flexShrink: 0,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 700,
+                          fontSize: "0.8125rem",
+                          px: 2.25,
+                          py: 0.95,
+                          color: SHELL_PRIMARY,
+                          bgcolor: "#fff !important",
+                          border: "1px solid rgba(248,114,58,0.55) !important",
+                          boxShadow: "none",
+                          whiteSpace: "nowrap",
+                          "&:hover": {
+                            bgcolor: "#fff !important",
+                            border: "1px solid rgba(248,114,58,0.75) !important",
+                            boxShadow: "none",
+                          },
+                        }}
+                      >
+                        Send to hiring manager
+                      </Button>
+                    </Stack>
+                  )}
                 </Stack>
 
                 <Typography
@@ -4212,6 +4408,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     startIcon={<IosShareRoundedIcon sx={{ fontSize: "16px !important" }} />}
                     onClick={() => {
                       setSendHmLeavingStacked(false);
+                      setHmEmailError("");
                       setSendHmDialogOpen(true);
                     }}
                     sx={{
@@ -4313,7 +4510,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               <Box sx={{ position: "relative", zIndex: 1, p: { xs: 2.5, sm: 3 } }}>
                 {/* Dialog header */}
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} alignItems="flex-start">
                     <Box
                       sx={{
                         width: 32,
@@ -4327,9 +4524,11 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     >
                       <IosShareRoundedIcon sx={{ fontSize: 17, color: SHELL_PRIMARY }} />
                     </Box>
-                    <Typography component="h2" sx={{ fontSize: "1.125rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.025em", lineHeight: 1.25 }}>
-                      Send to hiring manager
-                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography component="h2" sx={{ fontSize: "1.125rem", fontWeight: 700, color: SHELL_INK, letterSpacing: "-0.025em", lineHeight: 1.25 }}>
+                        {hmSent ? "Change hiring manager" : "Send to hiring manager"}
+                      </Typography>
+                    </Box>
                   </Stack>
                   <IconButton size="small" onClick={closeSendHmDialog} sx={{ color: SHELL_MUTED, mt: -0.5, mr: -0.5 }}>
                     <CloseRoundedIcon sx={{ fontSize: 20 }} />
@@ -4530,9 +4729,13 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                   <Typography sx={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: SHELL_MUTED, mb: 0.4 }}>
                     Hiring manager email
                   </Typography>
-                  <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, lineHeight: 1.45, mb: 1 }}>
-                    They{"\u2019"}ll receive an email with a link to review and approve the profile.
-                  </Typography>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, lineHeight: 1.45, mb: 0 }}>
+                      {hmSent
+                        ? "When you send, everyone still on the list gets a new email with a fresh review link."
+                        : "They\u2019ll receive an email with a link to review and approve the profile."}
+                    </Typography>
+                  </Box>
 
                   <TextField
                     size="small"
@@ -4600,6 +4803,52 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       ))}
                     </Stack>
                   )}
+
+                  {hmSent ? (
+                    <Box
+                      component="aside"
+                      aria-label="Removing an invited hiring manager invalidates their previous review link"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        mt: hmEmails.length > 0 ? 1.25 : 1,
+                        pl: 1.1,
+                        pr: 1.15,
+                        py: 0.75,
+                        borderRadius: "10px",
+                        border: "1px solid rgba(191, 219, 254, 0.65)",
+                        bgcolor: "rgba(239, 246, 255, 0.92)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      <InfoOutlinedIcon
+                        aria-hidden
+                        sx={{
+                          fontSize: 18,
+                          color: "#2563eb",
+                          flexShrink: 0,
+                          mt: "0.5px",
+                          opacity: 0.92,
+                        }}
+                      />
+                      <Typography
+                        component="p"
+                        sx={{
+                          m: 0,
+                          flex: 1,
+                          minWidth: 0,
+                          fontSize: "12px",
+                          lineHeight: 1.5,
+                          letterSpacing: "-0.01em",
+                          color: "#1e3a8a",
+                          fontWeight: 500,
+                        }}
+                      >
+                        If you remove someone who was already invited, their old review link stops working as soon as you send this update.
+                      </Typography>
+                    </Box>
+                  ) : null}
                 </Box>
                 </Stack>
 
@@ -4634,6 +4883,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                         if (!finalEmails.includes(pending)) finalEmails.push(pending);
                       }
                       if (finalEmails.length === 0) return;
+                      const wasSent = hmSent;
+                      if (wasSent) setLastHmReminder(null);
                       setHmEmails(finalEmails);
                       setHmEmailInput("");
                       setHmEmailError("");
@@ -4641,7 +4892,12 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       setSendHmLeavingStacked(false);
                       setSendHmDialogOpen(false);
                       setSkipHmDialogOpen(false);
-                      setSnackbar({ open: true, message: `Invite sent to ${finalEmails.length} hiring manager${finalEmails.length > 1 ? "s" : ""}.` });
+                      setSnackbar({
+                        open: true,
+                        message: wasSent
+                          ? `Updated invite sent to ${finalEmails.length} hiring manager${finalEmails.length > 1 ? "s" : ""}.`
+                          : `Invite sent to ${finalEmails.length} hiring manager${finalEmails.length > 1 ? "s" : ""}.`,
+                      });
                     }}
                     sx={{
                       borderRadius: "10px",
@@ -4654,13 +4910,166 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       "&:hover": { boxShadow: "0 10px 24px rgba(248,114,58,0.28)" },
                     }}
                   >
-                    Send invite{hmEmails.length > 1 ? "s" : ""}
+                    {hmSent
+                      ? hmEmails.length > 1
+                        ? "Send updated invites"
+                        : "Send updated invite"
+                      : `Send invite${hmEmails.length > 1 ? "s" : ""}`}
                   </Button>
                 </Stack>
               </Box>
             </Box>
               </Box>
             </Box>
+          </Dialog>
+
+          <Dialog
+            open={hmReminderDialogOpen}
+            onClose={() => setHmReminderDialogOpen(false)}
+            maxWidth="xs"
+            fullWidth
+            sx={{ zIndex: 22000 }}
+            PaperProps={{
+              sx: {
+                borderRadius: "16px",
+                border: "1px solid rgba(220,212,202,0.5)",
+                boxShadow: "0 24px 72px rgba(18,10,4,0.18)",
+                overflow: "hidden",
+              },
+            }}
+            slotProps={{ backdrop: { sx: { backgroundColor: "rgba(29, 26, 23, 0.38)", backdropFilter: "blur(4px)" } } }}
+          >
+            <Box sx={{ px: { xs: 2.5, sm: 3 }, pt: { xs: 2.5, sm: 3 }, pb: 1 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    component="h2"
+                    sx={{
+                      fontSize: "1.0625rem",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: SHELL_INK,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    Send a reminder?
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.5,
+                      fontSize: "0.8125rem",
+                      color: SHELL_MUTED,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {hmEmails.length === 1
+                      ? "We will email this address to review the ideal candidate profile."
+                      : `We will email these ${hmEmails.length} addresses to review the ideal candidate profile.`}
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  aria-label="Close"
+                  onClick={() => setHmReminderDialogOpen(false)}
+                  sx={{ color: SHELL_MUTED, mt: -0.5, mr: -0.5 }}
+                >
+                  <CloseRoundedIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Stack>
+            </Box>
+
+            <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pt: 1, pb: 0 }}>
+              <Stack
+                component="ul"
+                sx={{
+                  listStyle: "none",
+                  p: 0,
+                  m: 0,
+                  borderRadius: "12px",
+                  border: "1px solid rgba(220,212,202,0.55)",
+                  bgcolor: "rgba(250,248,245,0.6)",
+                  overflow: "hidden",
+                }}
+              >
+                {hmEmails.map((email, idx) => (
+                  <Stack
+                    key={email}
+                    component="li"
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{
+                      px: 1.5,
+                      py: 1,
+                      borderTop: idx === 0 ? "none" : "1px solid rgba(220,212,202,0.45)",
+                    }}
+                  >
+                    <EmailOutlinedIcon sx={{ fontSize: 16, color: SHELL_MUTED, flexShrink: 0 }} />
+                    <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600, color: SHELL_INK, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {email}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+
+              {lastHmReminder ? (
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  alignItems="center"
+                  sx={{ mt: 1.5 }}
+                >
+                  <AccessTimeRoundedIcon sx={{ fontSize: 14, color: SHELL_MUTED }} />
+                  <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, lineHeight: 1.45, fontWeight: 500 }}>
+                    {lastHmReminderAuditTitle}
+                  </Typography>
+                </Stack>
+              ) : null}
+            </DialogContent>
+
+            <DialogActions sx={{ px: { xs: 2.5, sm: 3 }, pb: { xs: 2.5, sm: 2.75 }, pt: 2, gap: 1 }}>
+              <Button
+                variant="text"
+                onClick={() => setHmReminderDialogOpen(false)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  color: SHELL_MUTED,
+                  px: 1.5,
+                  "&:hover": { bgcolor: "rgba(0,0,0,0.04)", color: SHELL_INK },
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={() => {
+                  setLastHmReminder({ at: Date.now(), byLabel: HM_REMINDER_SENT_BY_LABEL });
+                  setHmReminderDialogOpen(false);
+                  setSnackbar({
+                    open: true,
+                    message:
+                      hmEmails.length === 1
+                        ? `Reminder sent successfully to ${hmEmails[0]}.`
+                        : `Reminder sent successfully to ${hmEmails.length} hiring managers.`,
+                  });
+                }}
+                sx={{
+                  borderRadius: "10px",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.8125rem",
+                  px: 2.25,
+                  py: 0.85,
+                  boxShadow: "0 6px 18px rgba(248,114,58,0.24)",
+                  "&:hover": { boxShadow: "0 8px 22px rgba(248,114,58,0.30)" },
+                }}
+              >
+                {lastHmReminder ? "Send again" : "Send reminder"}
+              </Button>
+            </DialogActions>
           </Dialog>
         </Box>
       </Box>
@@ -5453,12 +5862,30 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={5200}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        autoHideDuration={6200}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbar((s) => ({ ...s, open: false }));
+        }}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        sx={{ zIndex: 2000 }}
-        message={snackbar.message}
-      />
+        sx={{ zIndex: 20000 }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity="success"
+          variant="filled"
+          elevation={6}
+          sx={{
+            alignItems: "center",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            boxShadow: "0 12px 40px rgba(22, 101, 52, 0.28)",
+            pr: 1,
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
