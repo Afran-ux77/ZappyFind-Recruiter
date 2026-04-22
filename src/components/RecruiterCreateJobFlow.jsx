@@ -1261,6 +1261,11 @@ function simulateCareerPageExtraction() {
 /** Shown in reminder audit tooltip until recruiter identity is wired from auth */
 const HM_REMINDER_SENT_BY_LABEL = "You";
 
+/** Hiring manager preview: sign-off metrics strip (time to hire, etc.). Toggle on to show again. */
+const HM_SIGNOFF_METRICS_PREVIEW_ENABLED = true;
+/** Hiring manager review: two-column layout (main left, wider sidebar) from this width up. */
+const HM_REVIEW_WIDE_MIN = 1320;
+
 export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [phase, setPhase] = useState("choose");
   const [scratchExpanded, setScratchExpanded] = useState(() => ({ ...SCRATCH_EXPANDED_DEFAULT }));
@@ -1325,6 +1330,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [hmInviteCommentDraft, setHmInviteCommentDraft] = useState("");
   const [hmInviteMessageOpen, setHmInviteMessageOpen] = useState(false);
   const hmInviteMessageInputRef = useRef(null);
+  const [hmReviewComment, setHmReviewComment] = useState("");
+  const [hmReviewSubmitted, setHmReviewSubmitted] = useState(false);
 
   const skipHmRecessedBehindSend = skipHmDialogOpen && (sendHmDialogOpen || sendHmLeavingStacked);
 
@@ -4106,264 +4113,69 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
 
                 {/* Predicted impact metrics */}
                 <Grid container spacing={1.5}>
-                  {PREDICTED_METRICS.map((m) => (
-                    <Grid key={m.label} size={{ xs: 6, sm: 3 }}>
-                      <Box
-                        sx={{
-                          borderRadius: "11px",
-                          border: "1px solid rgba(220,212,202,0.25)",
-                          bgcolor: "rgba(255,255,255,0.7)",
-                          backdropFilter: "blur(6px)",
-                          p: { xs: 1.5, md: 1.75 },
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 0.35,
-                          transition: "box-shadow 0.18s ease, border-color 0.18s ease",
-                          "&:hover": {
-                            boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-                            borderColor: "rgba(220,212,202,0.45)",
-                          },
-                        }}
-                      >
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <m.icon sx={{ fontSize: 14, color: m.color, opacity: 0.75 }} />
-                          <Typography sx={{ fontSize: "0.575rem", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: SHELL_MUTED }}>
-                            {m.label}
+                  {PREDICTED_METRICS.map((m) => {
+                    const isDemoEntry = m.label === "Time to Hire";
+                    return (
+                      <Grid key={m.label} size={{ xs: 6, sm: 3 }}>
+                        <Box
+                          role={isDemoEntry ? "button" : undefined}
+                          tabIndex={isDemoEntry ? 0 : undefined}
+                          onClick={isDemoEntry ? () => setPhase("hmReview") : undefined}
+                          onKeyDown={
+                            isDemoEntry
+                              ? (e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setPhase("hmReview");
+                                  }
+                                }
+                              : undefined
+                          }
+                          sx={{
+                            borderRadius: "11px",
+                            border: "1px solid rgba(220,212,202,0.25)",
+                            bgcolor: "rgba(255,255,255,0.7)",
+                            backdropFilter: "blur(6px)",
+                            p: { xs: 1.5, md: 1.75 },
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0.35,
+                            cursor: isDemoEntry ? "pointer" : "default",
+                            transition: "box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease",
+                            "&:hover": {
+                              boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                              borderColor: "rgba(220,212,202,0.45)",
+                              ...(isDemoEntry ? { transform: "translateY(-1px)" } : null),
+                            },
+                            "&:focus-visible": isDemoEntry
+                              ? { outline: `2px solid ${SHELL_PRIMARY}66`, outlineOffset: 2 }
+                              : undefined,
+                          }}
+                        >
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <m.icon sx={{ fontSize: 14, color: m.color, opacity: 0.75 }} />
+                            <Typography sx={{ fontSize: "0.575rem", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: SHELL_MUTED }}>
+                              {m.label}
+                            </Typography>
+                          </Stack>
+                          <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.2, mt: 0.25 }}>
+                            {m.value}
                           </Typography>
-                        </Stack>
-                        <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.2, mt: 0.25 }}>
-                          {m.value}
-                        </Typography>
-                        <Typography sx={{ fontSize: "0.65rem", fontWeight: 500, color: m.color, lineHeight: 1.35 }}>
-                          {m.note}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  ))}
+                          <Typography sx={{ fontSize: "0.65rem", fontWeight: 500, color: m.color, lineHeight: 1.35 }}>
+                            {m.note}
+                          </Typography>
+                          {isDemoEntry ? (
+                            <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: SHELL_PRIMARY, letterSpacing: "0.04em", textTransform: "uppercase", mt: 0.5 }}>
+                              Preview hiring manager view &rarr;
+                            </Typography>
+                          ) : null}
+                        </Box>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
               </Box>
             </Box>
-          </Box>
-
-          <Box
-            sx={{
-              mt: 2,
-              borderRadius: "16px",
-              border: "1px solid rgba(220,212,202,0.5)",
-              bgcolor: "rgba(255,255,255,0.92)",
-              p: { xs: 1.75, sm: 2.25 },
-            }}
-          >
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              alignItems={{ xs: "flex-start", sm: "center" }}
-              justifyContent="space-between"
-              spacing={1.25}
-              sx={{ mb: jobProfileComments.length > 0 ? 1.5 : 1.25 }}
-            >
-              <Stack direction="row" alignItems="center" spacing={1.25}>
-                <Box
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "11px",
-                    display: "grid",
-                    placeItems: "center",
-                    bgcolor: "rgba(248,114,58,0.1)",
-                    border: "1px solid rgba(248,114,58,0.26)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY }} aria-hidden />
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "0.95rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.25 }}>
-                    Comments
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.7rem", color: SHELL_MUTED, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", mt: 0.2 }}>
-                    {jobProfileComments.length === 0
-                      ? "No notes yet"
-                      : `${jobProfileComments.length} ${jobProfileComments.length === 1 ? "note" : "notes"} from your team`}
-                  </Typography>
-                </Box>
-              </Stack>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<AddOutlinedIcon sx={{ fontSize: "15px !important" }} />}
-                onClick={() => {
-                  setJobCommentComposerOpen((o) => {
-                    if (o) setJobManualCommentDraft("");
-                    return !o;
-                  });
-                }}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  fontSize: "0.8125rem",
-                  borderRadius: "10px",
-                  px: 1.75,
-                  minHeight: 34,
-                  height: 34,
-                  color: SHELL_PRIMARY,
-                  borderColor: `${SHELL_PRIMARY}44`,
-                  alignSelf: { xs: "stretch", sm: "center" },
-                  "&:hover": { borderColor: SHELL_PRIMARY, bgcolor: "rgba(248,114,58,0.045)" },
-                }}
-              >
-                Add comment
-              </Button>
-            </Stack>
-
-            {jobCommentComposerOpen ? (
-              <Box sx={{ mb: jobProfileComments.length > 0 ? 1.5 : 0 }}>
-                <TextField
-                  multiline
-                  minRows={2}
-                  maxRows={6}
-                  fullWidth
-                  size="small"
-                  placeholder="Add a note for your team on this job."
-                  value={jobManualCommentDraft}
-                  onChange={(e) => setJobManualCommentDraft(e.target.value)}
-                  inputProps={{ maxLength: 2000 }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px", fontSize: "0.875rem" } }}
-                />
-                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 1 }}>
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => {
-                      setJobCommentComposerOpen(false);
-                      setJobManualCommentDraft("");
-                    }}
-                    sx={{ textTransform: "none", fontWeight: 600, color: SHELL_MUTED }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    disableElevation
-                    disabled={!jobManualCommentDraft.trim()}
-                    onClick={() => {
-                      const t = jobManualCommentDraft.trim();
-                      if (!t) return;
-                      setJobProfileComments((prev) => [
-                        {
-                          id: `job-note-${Date.now()}`,
-                          text: t,
-                          authorName: PROFILE_SKILL_MARKED_BY,
-                          authorRole: "Recruiter",
-                          authorInitial: PROFILE_SKILL_MARKED_BY.charAt(0).toUpperCase(),
-                          createdAt: Date.now(),
-                        },
-                        ...prev,
-                      ]);
-                      setJobManualCommentDraft("");
-                      setJobCommentComposerOpen(false);
-                    }}
-                    sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
-                  >
-                    Post
-                  </Button>
-                </Stack>
-              </Box>
-            ) : null}
-
-            {jobProfileComments.length === 0 && !jobCommentComposerOpen ? (
-              <Box
-                sx={{
-                  py: 2.25,
-                  px: 2,
-                  textAlign: "center",
-                  borderRadius: "12px",
-                  bgcolor: "rgba(248,246,243,0.6)",
-                  border: "1px dashed rgba(220,212,202,0.7)",
-                }}
-              >
-                <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK }}>
-                  No comments yet
-                </Typography>
-                <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.35, lineHeight: 1.5 }}>
-                  Add the first note so your team can follow along, or include a message when you email the hiring manager.
-                </Typography>
-              </Box>
-            ) : jobProfileComments.length === 0 ? null : (
-              <Stack spacing={1}>
-                {jobProfileComments.map((c) => (
-                  <Box
-                    key={c.id}
-                    sx={{
-                      borderRadius: "12px",
-                      border: "1px solid rgba(220,212,202,0.5)",
-                      bgcolor: "#fff",
-                      p: 1.5,
-                      transition: "border-color 0.18s ease, box-shadow 0.18s ease",
-                      "&:hover": { borderColor: "rgba(220,212,202,0.85)", boxShadow: "0 4px 14px rgba(18,10,4,0.04)" },
-                    }}
-                  >
-                    <Stack direction="row" spacing={1.25} alignItems="flex-start">
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          flexShrink: 0,
-                          borderRadius: "50%",
-                          bgcolor: "rgba(248,114,58,0.14)",
-                          color: "#B8481A",
-                          display: "grid",
-                          placeItems: "center",
-                          fontWeight: 800,
-                          fontSize: "0.8125rem",
-                          letterSpacing: "-0.01em",
-                        }}
-                        aria-hidden
-                      >
-                        {c.authorInitial || (c.authorName ? c.authorName.charAt(0).toUpperCase() : "?")}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Stack direction="row" alignItems="baseline" spacing={0.75} flexWrap="wrap" rowGap={0.2}>
-                          <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.3 }}>
-                            {c.authorName}
-                          </Typography>
-                          {c.authorRole ? (
-                            <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, fontWeight: 600, lineHeight: 1.3 }}>
-                              · {c.authorRole}
-                            </Typography>
-                          ) : null}
-                          <Tooltip title={formatJobCommentAbsoluteTime(c.createdAt)} arrow placement="top">
-                            <Typography
-                              sx={{
-                                fontSize: "0.72rem",
-                                color: SHELL_MUTED,
-                                fontWeight: 600,
-                                lineHeight: 1.3,
-                                cursor: "default",
-                              }}
-                            >
-                              · {formatJobCommentRelativeTime(c.createdAt)}
-                            </Typography>
-                          </Tooltip>
-                        </Stack>
-                        <Typography
-                          sx={{
-                            fontSize: "0.875rem",
-                            color: "rgba(23,18,14,0.88)",
-                            lineHeight: 1.55,
-                            mt: 0.45,
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-word",
-                          }}
-                        >
-                          {c.text}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            )}
           </Box>
 
           {/* Next step */}
@@ -5199,21 +5011,6 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       if (finalEmails.length === 0) return;
                       const wasSent = hmSent;
                       if (wasSent) setLastHmReminder(null);
-                      const inviteNote = hmInviteCommentDraft.trim();
-                      if (inviteNote) {
-                        const inviteLabel = wasSent ? "Updated hiring manager invite" : "Hiring manager invite";
-                        setJobProfileComments((prev) => [
-                          {
-                            id: `hm-invite-${Date.now()}`,
-                            text: `${inviteLabel} (${finalEmails.join(", ")})\n\n${inviteNote}`,
-                            authorName: PROFILE_SKILL_MARKED_BY,
-                            authorRole: "Recruiter",
-                            authorInitial: PROFILE_SKILL_MARKED_BY.charAt(0).toUpperCase(),
-                            createdAt: Date.now(),
-                          },
-                          ...prev,
-                        ]);
-                      }
                       setHmInviteCommentDraft("");
                       setHmInviteMessageOpen(false);
                       setHmEmails(finalEmails);
@@ -5426,6 +5223,1076 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               })()}
             </DialogActions>
           </Dialog>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (phase === "hmReview") {
+    const skills = getSkillsForRole(jobTitle, department);
+    const applyOverride = (s) => ({
+      ...s,
+      level: profileLevelOverrides[s._k] !== undefined ? profileLevelOverrides[s._k] : s.level,
+    });
+    const mustSkills = skills.mandatory
+      .map((s) => ({ ...s, _k: `mb:${s.name}` }))
+      .map(applyOverride);
+    const niceSkills = skills.niceToHave
+      .map((s) => ({ ...s, _k: `nb:${s.name}` }))
+      .map(applyOverride);
+    const profileInsights = getProfileInsights(jobTitle, department, domain);
+    const workModeLabel =
+      workMode === "remote" ? "Remote" : workMode === "hybrid" ? "Hybrid" : "In-office";
+    const salaryCurrencyLabel =
+      SALARY_CURRENCY_OPTIONS.find((o) => o.code === salaryCurrency)?.label ?? salaryCurrency;
+    const compensationShort =
+      salaryMin && salaryMax ? `${salaryMin}\u2013${salaryMax} ${salaryCurrencyLabel}` : null;
+    const initials = (jobTitle || "IC")
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+    const HM_TIER_OPTIONS = [
+      {
+        label: "Expert",
+        level: 92,
+        color: SHELL_PRIMARY,
+        selectedBg: "rgba(248,114,58,0.1)",
+        selectedBorder: "rgba(248,114,58,0.55)",
+        selectedHoverBg: "rgba(248,114,58,0.14)",
+        selectedHoverBorder: "rgba(248,114,58,0.72)",
+        idleHoverBg: "rgba(248,114,58,0.05)",
+        idleHoverBorder: "rgba(248,114,58,0.35)",
+      },
+      {
+        label: "Strong",
+        level: 80,
+        color: "#2563eb",
+        selectedBg: "rgba(37,99,235,0.1)",
+        selectedBorder: "rgba(37,99,235,0.5)",
+        selectedHoverBg: "rgba(37,99,235,0.14)",
+        selectedHoverBorder: "rgba(37,99,235,0.68)",
+        idleHoverBg: "rgba(37,99,235,0.05)",
+        idleHoverBorder: "rgba(37,99,235,0.32)",
+      },
+      {
+        label: "Good",
+        level: 60,
+        color: SHELL_MUTED,
+        selectedBg: "rgba(107,99,92,0.12)",
+        selectedBorder: "rgba(107,99,92,0.48)",
+        selectedHoverBg: "rgba(107,99,92,0.16)",
+        selectedHoverBorder: "rgba(107,99,92,0.62)",
+        idleHoverBg: "rgba(107,99,92,0.06)",
+        idleHoverBorder: "rgba(107,99,92,0.35)",
+      },
+    ];
+    const tierForLevel = (level) => {
+      if (level >= 85) return "Expert";
+      if (level >= 65) return "Strong";
+      return "Good";
+    };
+    const setTier = (key, lvl) => {
+      setProfileLevelOverrides((prev) => ({ ...prev, [key]: lvl }));
+    };
+    const toggleSkillApplicability = (key) => {
+      setProfileInapplicable((prev) => {
+        if (prev[key]) {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }
+        return {
+          ...prev,
+          [key]: {
+            at: new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }),
+            by: "Hiring manager",
+          },
+        };
+      });
+    };
+    const roleLabel = jobTitle?.trim() || "this role";
+    const recruiterLabel = PROFILE_SKILL_MARKED_BY;
+
+    const HmSkillRow = ({ skill }) => {
+      const muted = Boolean(profileInapplicable[skill._k]);
+      const currentTier = tierForLevel(skill.level);
+      return (
+        <Box
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid rgba(220,212,202,0.55)",
+            bgcolor: muted ? "rgba(250,248,245,0.75)" : "#fff",
+            p: { xs: 1.25, md: 1.375 },
+            opacity: muted ? 0.66 : 1,
+            transition: "border-color 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease",
+            "&:hover": { borderColor: "rgba(248,114,58,0.38)", boxShadow: "0 4px 12px rgba(18,10,4,0.04)" },
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="space-between"
+            spacing={1}
+          >
+            <Typography
+              sx={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: SHELL_INK,
+                letterSpacing: "-0.01em",
+                lineHeight: 1.35,
+                textDecoration: muted ? "line-through" : "none",
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {skill.name}
+            </Typography>
+            <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+              {HM_TIER_OPTIONS.map((opt) => {
+                const selected = opt.label === currentTier && !muted;
+                return (
+                  <Button
+                    key={opt.label}
+                    variant="outlined"
+                    size="small"
+                    disableElevation
+                    disabled={muted}
+                    onClick={() => setTier(skill._k, opt.level)}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "11px",
+                      borderRadius: "999px",
+                      minHeight: 26,
+                      height: 26,
+                      px: 1,
+                      py: 0,
+                      ...(selected
+                        ? {
+                            color: opt.color,
+                            borderColor: opt.selectedBorder,
+                            bgcolor: opt.selectedBg,
+                            "&:hover": {
+                              borderColor: opt.selectedHoverBorder,
+                              bgcolor: opt.selectedHoverBg,
+                            },
+                          }
+                        : {
+                            color: SHELL_MUTED,
+                            borderColor: "rgba(220,212,202,0.8)",
+                            bgcolor: "#fff",
+                            "&:hover": {
+                              borderColor: opt.idleHoverBorder,
+                              color: opt.color,
+                              bgcolor: opt.idleHoverBg,
+                            },
+                          }),
+                    }}
+                  >
+                    {opt.label}
+                  </Button>
+                );
+              })}
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => toggleSkillApplicability(skill._k)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "11px",
+                  color: muted ? SHELL_PRIMARY : SHELL_MUTED,
+                  minHeight: 26,
+                  height: 26,
+                  px: 0.75,
+                  "&:hover": { color: muted ? SHELL_PRIMARY : SHELL_INK, bgcolor: "rgba(0,0,0,0.03)" },
+                }}
+              >
+                {muted ? "Bring back" : "Not needed"}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      );
+    };
+
+    body = (
+      <Box
+        role="main"
+        sx={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1500,
+          bgcolor: "#faf8f5",
+          color: SHELL_INK,
+          overflowY: "auto",
+          overflowX: "hidden",
+          WebkitOverflowScrolling: "touch",
+          "@keyframes hmrFadeUp": {
+            from: { opacity: 0, transform: "translateY(10px)" },
+            to: { opacity: 1, transform: "translateY(0)" },
+          },
+          "@keyframes hmInsightSheen": {
+            "0%, 20%": { transform: "translateX(-55%) skewX(-14deg)", opacity: 0 },
+            "28%": { opacity: 0.75 },
+            "42%": { transform: "translateX(155%) skewX(-14deg)", opacity: 0.55 },
+            "52%, 100%": { opacity: 0 },
+          },
+          "@media (prefers-reduced-motion: reduce)": {
+            "& .hm-insight-card": {
+              animation: "none !important",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease !important",
+            },
+            "& .hm-insight-card:hover": { transform: "none !important" },
+            "& .hm-insight-sheen": { display: "none !important" },
+            "& .hm-insight-icon": { transition: "none !important" },
+          },
+        }}
+      >
+        <Box
+          component="header"
+          sx={{
+            position: "sticky",
+            top: 0,
+            zIndex: 5,
+            bgcolor: "rgba(250,248,245,0.92)",
+            backdropFilter: "blur(8px)",
+            borderBottom: "1px solid rgba(220,212,202,0.5)",
+          }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="flex-start"
+            flexWrap="wrap"
+            rowGap={1}
+            columnGap={2}
+            sx={{
+              width: "100%",
+              maxWidth: "none",
+              px: { xs: 2, md: 3 },
+              py: { xs: 1, md: 1.125 },
+            }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, flex: "1 1 200px" }}>
+              <Box
+                aria-hidden
+                sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "8px",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: "0.8125rem",
+                  letterSpacing: "-0.02em",
+                  background: "linear-gradient(135deg, rgba(248,114,58,1) 0%, rgba(232,90,40,1) 100%)",
+                  boxShadow: "0 2px 8px rgba(248,114,58,0.24)",
+                }}
+              >
+                Z
+              </Box>
+              <Stack spacing={0}>
+                <Typography sx={{ fontSize: "14px", fontWeight: 800, letterSpacing: "-0.02em", color: SHELL_INK, lineHeight: 1.2 }}>
+                  ZappyFind
+                </Typography>
+                <Typography sx={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: SHELL_MUTED, lineHeight: 1.25 }}>
+                  Hiring manager review
+                </Typography>
+              </Stack>
+            </Stack>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => setPhase("profile")}
+              sx={{
+                flexShrink: 0,
+                ml: "auto",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "12px",
+                color: SHELL_MUTED,
+                "&:hover": { color: SHELL_INK, bgcolor: "rgba(0,0,0,0.04)" },
+              }}
+            >
+              Close preview
+            </Button>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            px: { xs: 2, md: 3 },
+            pt: { xs: 1.5, md: 1.75 },
+            pb: { xs: 1.25, md: 1.5 },
+            display: "flex",
+            flexDirection: "column",
+            gap: { xs: 2, md: 2.5 },
+          }}
+        >
+          <Box
+            sx={{
+              maxWidth: 1040,
+              width: "100%",
+              mx: "auto",
+              my: "16px",
+              [`@media (min-width: ${HM_REVIEW_WIDE_MIN}px)`]: {
+                mx: 0,
+                mr: "auto",
+              },
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.75}
+              sx={{
+                display: "inline-flex",
+                px: 1,
+                py: 0.375,
+                borderRadius: "999px",
+                bgcolor: "rgba(248,114,58,0.08)",
+                border: "1px solid rgba(248,114,58,0.2)",
+                mb: 1.25,
+                animation: "hmrFadeUp 0.45s ease-out both",
+              }}
+            >
+              <CheckCircleOutlineRoundedIcon sx={{ fontSize: 12, color: SHELL_PRIMARY }} />
+              <Typography sx={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.02em", color: SHELL_PRIMARY }}>
+                Ideal candidate profile &middot; shared by {recruiterLabel}
+              </Typography>
+            </Stack>
+
+            <Typography
+              component="h1"
+              sx={{
+                fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
+                fontWeight: 800,
+                letterSpacing: "-0.035em",
+                lineHeight: 1.1,
+                color: SHELL_INK,
+                mb: 1.125,
+                animation: "hmrFadeUp 0.5s ease-out 0.05s both",
+              }}
+            >
+              Align on the ideal candidate for{" "}
+              <Box component="span" sx={{ color: SHELL_PRIMARY }}>
+                {roleLabel}
+              </Box>
+            </Typography>
+            <Typography
+              sx={{
+                maxWidth: { xs: "100%", sm: 720, md: 880 },
+                fontSize: "14px",
+                lineHeight: 1.5,
+                color: SHELL_MUTED,
+                fontWeight: 500,
+                mb: 0,
+                animation: "hmrFadeUp 0.55s ease-out 0.1s both",
+              }}
+            >
+              ZappyFind pulled the competencies that matter for this role from your job description, and {recruiterLabel} shaped them into this profile. Confirm the bar here and only candidates who meet it will reach you.
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: 2, md: 2 },
+              width: "100%",
+              [`@media (min-width: ${HM_REVIEW_WIDE_MIN}px)`]: {
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1040px) minmax(268px, 1fr)",
+                columnGap: 2,
+                alignItems: "start",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                minWidth: 0,
+                [`@media (min-width: ${HM_REVIEW_WIDE_MIN}px)`]: {
+                  gridColumn: 1,
+                  gridRow: 1,
+                  alignSelf: "start",
+                },
+              }}
+            >
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid rgba(220,212,202,0.45)",
+              bgcolor: "#fff",
+              p: { xs: 2, md: 2.5 },
+              mb: { xs: 2.5, md: 3 },
+              boxShadow: "0 1px 0 #fff inset, 0 4px 20px rgba(18,10,4,0.025)",
+              animation: "hmrFadeUp 0.45s ease-out 0.08s both",
+              overflow: "visible",
+            }}
+          >
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.75} alignItems={{ xs: "flex-start", sm: "center" }} sx={{ mb: 2.25 }}>
+              <Box
+                aria-hidden
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "14px",
+                  flexShrink: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  fontWeight: 800,
+                  fontSize: "0.8125rem",
+                  letterSpacing: "-0.04em",
+                  fontFeatureSettings: '"tnum"',
+                  color: "#B94914",
+                  background:
+                    "linear-gradient(152deg, rgba(255,255,255,0.98) 0%, rgba(255,246,238,0.95) 48%, rgba(255,228,210,0.88) 100%)",
+                  border: "1px solid rgba(248,114,58,0.32)",
+                  boxShadow: "none",
+                }}
+              >
+                {initials}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: { xs: "0.9375rem", md: "1rem" },
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: SHELL_INK,
+                    lineHeight: 1.25,
+                    mb: 0.2,
+                  }}
+                >
+                  Ideal {roleLabel}
+                </Typography>
+                <Typography sx={{ fontSize: "0.78rem", fontWeight: 450, color: SHELL_MUTED, lineHeight: 1.4 }}>
+                  {[department, domain, experienceRange].filter(Boolean).join(" \u00b7 ")}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={2.5} sx={{ flexShrink: 0, pt: { xs: 0.5, sm: 0 } }}>
+                {[
+                  { icon: LanguageRoundedIcon, val: location?.trim() || "Not set" },
+                  { icon: PaymentsOutlinedIcon, val: compensationShort || "Not specified" },
+                  { icon: WorkOutlineRoundedIcon, val: [employmentType, workModeLabel].filter(Boolean).join(" \u00b7 ") || "Not set" },
+                ].map((f, i) => (
+                  <Stack key={i} direction="row" spacing={0.5} alignItems="center">
+                    <f.icon sx={{ fontSize: 14, color: SHELL_MUTED, opacity: 0.7 }} />
+                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 550, color: SHELL_INK, lineHeight: 1.25 }}>
+                      {f.val}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Box sx={{ height: "1px", bgcolor: "rgba(220,212,202,0.38)", mb: 2.25 }} />
+
+          {scratchSkills.length > 0 ? (
+            <Box sx={{ mb: { xs: 3.5, md: 4.25 } }}>
+              <Typography
+                component="h3"
+                sx={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 700,
+                  color: SHELL_INK,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Required skills
+              </Typography>
+              <Box
+                role="list"
+                aria-label="Required skills from job details"
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 0.85,
+                  alignItems: "center",
+                  paddingTop: "10px",
+                }}
+              >
+                {scratchSkills.map((sk) => (
+                  <ScratchSkillPill key={sk.name} name={sk.name} level={sk.level} listRole="listitem" />
+                ))}
+              </Box>
+            </Box>
+          ) : null}
+
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              pt: { xs: 0.75, md: 1 },
+              mb: { xs: 2.5, md: 2.75 },
+            }}
+          >
+            <AutoFixHighOutlinedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY, flexShrink: 0 }} />
+            <Typography
+              sx={{
+                fontSize: { xs: "0.875rem", md: "0.9375rem" },
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: SHELL_INK,
+                lineHeight: 1.25,
+              }}
+            >
+              What we picked up beyond your job description
+            </Typography>
+          </Stack>
+          <Grid container spacing={{ xs: 1.75, md: 2 }} sx={{ mb: { xs: 3.5, md: 4.25 } }}>
+            {profileInsights.map((ins, idx) => {
+              const theme = PROFILE_INSIGHT_ICON_THEMES[idx % PROFILE_INSIGHT_ICON_THEMES.length];
+              return (
+                <Grid key={ins.signal} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Box
+                    className="hm-insight-card"
+                    sx={{
+                      height: "100%",
+                      position: "relative",
+                      overflow: "hidden",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(199, 210, 254, 0.38)",
+                      bgcolor: "#fff",
+                      background:
+                        "linear-gradient(168deg, #ffffff 0%, rgba(248, 250, 255, 0.94) 38%, rgba(255, 252, 247, 0.98) 100%)",
+                      p: { xs: 1.5, md: 1.625 },
+                      animation: `hmrFadeUp 0.45s ease-out ${0.06 + idx * 0.04}s both`,
+                      transition:
+                        "transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.32s ease, border-color 0.28s ease, background 0.32s ease",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 0 rgba(255,255,255,0.65), 0 2px 14px rgba(99,102,241,0.06), 0 6px 22px rgba(18,10,4,0.035)",
+                      backdropFilter: "saturate(1.05)",
+                      cursor: "default",
+                      "&:hover": {
+                        transform: "translateY(-4px) scale(1.012)",
+                        borderColor: "rgba(129, 140, 248, 0.5)",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.98), 0 4px 0 rgba(255,255,255,0.5), 0 14px 42px rgba(99,102,241,0.12), 0 6px 20px rgba(248,114,58,0.09)",
+                        background:
+                          "linear-gradient(168deg, #ffffff 0%, rgba(244, 247, 255, 0.98) 42%, rgba(255, 253, 248, 1) 100%)",
+                        "& .hm-insight-icon": {
+                          transform: "scale(1.06) translateY(-1px)",
+                          boxShadow: `${theme.shadow}, 0 0 0 1px rgba(255,255,255,0.5)`,
+                        },
+                      },
+                      "&:active": {
+                        transform: "translateY(-1px) scale(1.006)",
+                        transitionDuration: "0.12s",
+                      },
+                    }}
+                  >
+                    <Box
+                      className="hm-insight-sheen"
+                      aria-hidden
+                      sx={{
+                        position: "absolute",
+                        top: "-32%",
+                        left: "-25%",
+                        width: "150%",
+                        height: "165%",
+                        zIndex: 0,
+                        pointerEvents: "none",
+                        background:
+                          "linear-gradient(102deg, transparent 0%, transparent 38%, rgba(255,255,255,0.72) 50%, rgba(224, 231, 255, 0.35) 52%, transparent 62%, transparent 100%)",
+                        animation: `hmInsightSheen ${6.8 + (idx % 3) * 0.9}s ease-in-out infinite`,
+                        animationDelay: `${idx * 1.1}s`,
+                        willChange: "transform, opacity",
+                      }}
+                    />
+                    <Box
+                      className="hm-insight-icon"
+                      sx={{
+                        position: "relative",
+                        zIndex: 1,
+                        width: 32,
+                        height: 32,
+                        borderRadius: "10px",
+                        background: theme.wrapBg,
+                        border: theme.wrapBorder,
+                        boxShadow: theme.shadow,
+                        display: "grid",
+                        placeItems: "center",
+                        mb: 0.875,
+                        transition: "transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.28s ease",
+                        willChange: "transform",
+                      }}
+                    >
+                      <ins.icon sx={{ fontSize: 16, color: theme.iconColor }} />
+                    </Box>
+                    <Typography
+                      sx={{
+                        position: "relative",
+                        zIndex: 1,
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: SHELL_INK,
+                        letterSpacing: "-0.01em",
+                        lineHeight: 1.3,
+                        mb: 0.375,
+                      }}
+                    >
+                      {ins.signal}
+                    </Typography>
+                    <Typography sx={{ position: "relative", zIndex: 1, fontSize: "12px", color: SHELL_MUTED, lineHeight: 1.5 }}>
+                      {ins.detail}
+                    </Typography>
+                  </Box>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              pt: { xs: 1.25, md: 1.5 },
+              mb: { xs: 2.25, md: 2.5 },
+            }}
+          >
+            <AdjustOutlinedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY, flexShrink: 0 }} />
+            <Typography
+              sx={{
+                fontSize: { xs: "0.875rem", md: "0.9375rem" },
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: SHELL_INK,
+                lineHeight: 1.25,
+              }}
+            >
+              Competencies we will match candidates against
+            </Typography>
+          </Stack>
+
+          <Grid container spacing={{ xs: 1.75, md: 2 }} sx={{ mb: { xs: 2.75, md: 3 } }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(220,212,202,0.35)",
+                  overflow: "hidden",
+                  p: { xs: 1.5, md: 1.75 },
+                }}
+              >
+                <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.375 }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: SHELL_PRIMARY }} />
+                  <Typography sx={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: SHELL_PRIMARY }}>
+                    Must-have
+                  </Typography>
+                  <Typography sx={{ fontSize: "11px", color: SHELL_MUTED, fontWeight: 600 }}>
+                    &middot; {mustSkills.filter((s) => !profileInapplicable[s._k]).length} / {mustSkills.length}
+                  </Typography>
+                </Stack>
+                <Stack spacing={1}>
+                  {mustSkills.map((s) => (
+                    <HmSkillRow key={s._k} skill={s} />
+                  ))}
+                </Stack>
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(220,212,202,0.35)",
+                  overflow: "hidden",
+                  p: { xs: 1.5, md: 1.75 },
+                }}
+              >
+                <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.375 }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#B0A79D" }} />
+                  <Typography sx={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#7B726A" }}>
+                    Nice-to-have
+                  </Typography>
+                  <Typography sx={{ fontSize: "11px", color: SHELL_MUTED, fontWeight: 600 }}>
+                    &middot; {niceSkills.filter((s) => !profileInapplicable[s._k]).length} / {niceSkills.length}
+                  </Typography>
+                </Stack>
+                <Stack spacing={1}>
+                  {niceSkills.map((s) => (
+                    <HmSkillRow key={s._k} skill={s} />
+                  ))}
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Box
+            sx={{
+              mt: { xs: 0.5, md: 0.75 },
+              pt: { xs: 2.25, md: 2.5 },
+              borderTop: "1px solid rgba(220,212,202,0.38)",
+            }}
+          >
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5 }}>
+              <EditNoteOutlinedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY }} />
+              <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, letterSpacing: "-0.01em", color: SHELL_INK }}>
+                Message to recruiter
+              </Typography>
+            </Stack>
+            <Typography sx={{ fontSize: "12px", color: SHELL_MUTED, lineHeight: 1.5, mb: 1.375 }}>
+              Optional. Anything you want the recruiter to factor in when they source for this role.
+            </Typography>
+            <TextField
+              multiline
+              minRows={3}
+              maxRows={8}
+              fullWidth
+              size="small"
+              placeholder="e.g. Candidates should have shipped a B2B SaaS product at scale, or I would trade years of experience for stronger systems thinking."
+              value={hmReviewComment}
+              onChange={(e) => setHmReviewComment(e.target.value)}
+              inputProps={{ maxLength: 2000 }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "10px",
+                  alignItems: "flex-start",
+                  fontSize: "14px",
+                },
+                "& .MuiOutlinedInput-input": {
+                  fontSize: "14px",
+                  lineHeight: 1.5,
+                  paddingTop: "10px",
+                  paddingBottom: "10px",
+                  paddingLeft: "12px",
+                  paddingRight: "12px",
+                },
+              }}
+            />
+          </Box>
+
+          </Box>
+
+          </Box>
+
+          <Box
+            sx={{
+              minWidth: 0,
+              width: "100%",
+              [`@media (min-width: ${HM_REVIEW_WIDE_MIN}px)`]: {
+                gridColumn: 2,
+                gridRow: 1,
+                alignSelf: "start",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: { xs: 1.25, md: 1.5 },
+              }}
+            >
+              <Box
+                sx={{
+                  borderRadius: "12px",
+                  border: "1px solid rgba(220,212,202,0.3)",
+                  bgcolor: "rgba(255,255,255,0.45)",
+                  p: { xs: 1.25, md: 1.5 },
+                  transition: "background-color 160ms ease, border-color 160ms ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.7)",
+                    borderColor: "rgba(220,212,202,0.55)",
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: SHELL_MUTED, mb: 1.25 }}>
+                  What you need to do
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { icon: AdjustOutlinedIcon, title: "Review competencies" },
+                    { icon: EditNoteOutlinedIcon, title: "Leave a note for recruiter" },
+                    { icon: IosShareRoundedIcon, title: "Send back" },
+                  ].map(({ icon: StepIcon, title }, idx, arr) => {
+                    const isLast = idx === arr.length - 1;
+                    return (
+                      <Box key={title} sx={{ position: "relative" }}>
+                        <Stack direction="row" alignItems="center" spacing={1.25} sx={{ width: "100%", py: 0.375 }}>
+                          <Box
+                            aria-hidden
+                            sx={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: "7px",
+                              display: "grid",
+                              placeItems: "center",
+                              bgcolor: "rgba(248,114,58,0.1)",
+                              color: SHELL_PRIMARY,
+                              flexShrink: 0,
+                              position: "relative",
+                              zIndex: 1,
+                              transition: "transform 160ms ease",
+                            }}
+                          >
+                            <StepIcon sx={{ fontSize: 14 }} />
+                          </Box>
+                          <Typography sx={{ fontSize: "13px", fontWeight: 600, color: SHELL_INK, letterSpacing: "-0.01em", lineHeight: 1.3, minWidth: 0, flex: 1 }}>
+                            {title}
+                          </Typography>
+                          <Typography
+                            aria-hidden
+                            sx={{
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              letterSpacing: "0.04em",
+                              color: SHELL_MUTED,
+                              opacity: 0.7,
+                              flexShrink: 0,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {idx + 1}/{arr.length}
+                          </Typography>
+                        </Stack>
+                        {!isLast ? (
+                          <Box
+                            aria-hidden
+                            sx={{
+                              position: "absolute",
+                              left: 12.5,
+                              top: "calc(50% + 13px)",
+                              height: "calc(100% - 26px)",
+                              borderLeft: "1px dashed rgba(248,114,58,0.3)",
+                              zIndex: 0,
+                            }}
+                          />
+                        ) : null}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+
+              {HM_SIGNOFF_METRICS_PREVIEW_ENABLED ? (
+                <Box
+                  sx={{
+                    borderRadius: "12px",
+                    border: "1px solid rgba(220,212,202,0.3)",
+                    bgcolor: "rgba(255,255,255,0.45)",
+                    p: { xs: 1.25, md: 1.5 },
+                    transition: "background-color 160ms ease, border-color 160ms ease",
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.7)",
+                      borderColor: "rgba(220,212,202,0.55)",
+                    },
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.25 }}>
+                    <Typography sx={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: SHELL_MUTED }}>
+                      What signing off unlocks
+                    </Typography>
+                    <Tooltip
+                      title="Your approval locks the brief. The recruiter uses these targets to source faster, keep candidates on brief, and avoid extra interview rounds."
+                      arrow
+                      placement="top"
+                      enterTouchDelay={0}
+                    >
+                      <InfoOutlinedIcon
+                        tabIndex={0}
+                        aria-label="What signing off unlocks"
+                        sx={{
+                          fontSize: 13,
+                          color: SHELL_MUTED,
+                          opacity: 0.7,
+                          cursor: "help",
+                          outline: "none",
+                          "&:hover, &:focus-visible": { opacity: 1, color: SHELL_INK },
+                        }}
+                      />
+                    </Tooltip>
+                  </Stack>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      columnGap: 1.25,
+                      rowGap: 1.25,
+                    }}
+                  >
+                    {[
+                      {
+                        label: "Time to hire",
+                        value: "~18 days",
+                        caption: "Typical calendar days from the role opening to an accepted offer for similar roles.",
+                        accent: "#0ea271",
+                        icon: AccessTimeRoundedIcon,
+                      },
+                      {
+                        label: "Candidate bar",
+                        value: "High",
+                        caption: "Shortlists have verified skills and relevant experience. Strength over volume.",
+                        accent: "#6366f1",
+                        icon: VerifiedRoundedIcon,
+                      },
+                      {
+                        label: "Brief fit",
+                        value: "94%",
+                        caption: "Share of screened profiles matching the must-haves you confirmed in the brief.",
+                        accent: SHELL_PRIMARY,
+                        icon: HandshakeOutlinedIcon,
+                      },
+                      {
+                        label: "Interviews per hire",
+                        value: "~3",
+                        caption: "Typically around three interviews before an offer, so panels stay focused.",
+                        accent: "#0284c7",
+                        icon: TrendingUpRoundedIcon,
+                      },
+                    ].map((m) => {
+                      const MetricIcon = m.icon;
+                      return (
+                        <Box key={m.label} sx={{ minWidth: 0 }}>
+                          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.625 }}>
+                            <Box
+                              aria-hidden
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: "6px",
+                                display: "grid",
+                                placeItems: "center",
+                                bgcolor: `${m.accent}1a`,
+                                color: m.accent,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <MetricIcon sx={{ fontSize: 12 }} />
+                            </Box>
+                            <Typography
+                              sx={{
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                                color: SHELL_MUTED,
+                                lineHeight: 1.2,
+                                minWidth: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {m.label}
+                            </Typography>
+                            <Tooltip title={m.caption} arrow placement="top" enterTouchDelay={0}>
+                              <InfoOutlinedIcon
+                                tabIndex={0}
+                                aria-label={`About ${m.label}`}
+                                sx={{
+                                  fontSize: 12,
+                                  color: SHELL_MUTED,
+                                  opacity: 0.55,
+                                  flexShrink: 0,
+                                  cursor: "help",
+                                  outline: "none",
+                                  transition: "opacity 140ms ease, color 140ms ease",
+                                  "&:hover, &:focus-visible": { opacity: 1, color: SHELL_INK },
+                                }}
+                              />
+                            </Tooltip>
+                          </Stack>
+                          <Typography
+                            sx={{
+                              fontSize: "17px",
+                              fontWeight: 800,
+                              color: SHELL_INK,
+                              letterSpacing: "-0.025em",
+                              lineHeight: 1.05,
+                            }}
+                          >
+                            {m.value}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ) : null}
+            </Box>
+          </Box>
+
+          </Box>
+
+        </Box>
+
+        <Box
+          component="footer"
+          sx={{
+            position: "sticky",
+            bottom: 0,
+            zIndex: 5,
+            bgcolor: "rgba(250,248,245,0.92)",
+            backdropFilter: "blur(8px)",
+            borderTop: "1px solid rgba(220,212,202,0.5)",
+          }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="flex-start"
+            flexWrap="wrap"
+            rowGap={1.25}
+            columnGap={2}
+            sx={{
+              width: "100%",
+              maxWidth: "none",
+              px: { xs: 2, md: 3 },
+              py: { xs: 1.25, md: 1.375 },
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ alignItems: "flex-end", justifyContent: "flex-end", minWidth: 0, flex: "1 1 200px" }}
+            >
+              <CheckCircleOutlineRoundedIcon sx={{ fontSize: 14, color: SHELL_MUTED, flexShrink: 0 }} />
+              <Typography sx={{ fontSize: "12px", color: SHELL_MUTED, fontWeight: 600, textAlign: "left" }}>
+                {hmReviewSubmitted
+                  ? `Thanks. ${recruiterLabel} will see your updates.`
+                  : `Sent to ${recruiterLabel}. Your edits are autosaved as you go.`}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0, ml: "auto" }}>
+              <Button
+                variant="contained"
+                disableElevation
+                startIcon={<IosShareRoundedIcon sx={{ fontSize: "14px !important" }} />}
+                onClick={() => {
+                  setHmReviewSubmitted(true);
+                  setSnackbar({
+                    open: true,
+                    message: hmReviewComment.trim()
+                      ? `Take sent to ${recruiterLabel} with your note.`
+                      : `Take sent to ${recruiterLabel}.`,
+                  });
+                }}
+                sx={{
+                  width: "164px",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  borderRadius: "8px",
+                  px: 2,
+                  py: 0.75,
+                  boxShadow: "0 6px 16px rgba(248,114,58,0.2)",
+                  "&:hover": { boxShadow: "0 8px 18px rgba(248,114,58,0.26)" },
+                }}
+              >
+                Send back
+              </Button>
+            </Stack>
+          </Stack>
         </Box>
       </Box>
     );
@@ -5822,9 +6689,13 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
 
   return (
     <>
-      <RecruiterAppShell activeNav="jobs" onNav={handleNav} onSignOut={onExit}>
-        {body}
-      </RecruiterAppShell>
+      {phase === "hmReview" ? (
+        body
+      ) : (
+        <RecruiterAppShell activeNav="jobs" onNav={handleNav} onSignOut={onExit}>
+          {body}
+        </RecruiterAppShell>
+      )}
 
       <Dialog
         open={importDialogOpen}
