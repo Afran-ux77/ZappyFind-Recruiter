@@ -90,28 +90,6 @@ const DEPARTMENT_OPTIONS = [
   "Executive",
 ];
 
-const DOMAIN_OPTIONS = [
-  "Software & IT",
-  "Internet & Digital Media",
-  "Financial Services",
-  "Insurance",
-  "Healthcare & Life Sciences",
-  "Pharmaceuticals & Biotech",
-  "Retail & Consumer Goods",
-  "E-commerce & Marketplaces",
-  "Manufacturing & Industrial",
-  "B2B SaaS",
-  "Consumer tech",
-  "Fintech",
-  "Enterprise software",
-  "AI / ML",
-  "Cybersecurity",
-  "Gaming",
-  "EdTech",
-  "Climate / Energy",
-  "Hardware",
-];
-
 const SKILLS_MASTER_LIST = [
   "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js", "Python", "Java", "Go", "Rust",
   "SQL", "GraphQL", "REST APIs", "AWS", "GCP", "Azure", "Docker", "Kubernetes", "CI/CD", "Git",
@@ -235,15 +213,17 @@ const EDUCATION_OPTIONS = [
 const EMPLOYMENT_OPTIONS = ["Full-time", "Part-time", "Contract", "Internship"];
 
 const SALARY_CURRENCY_OPTIONS = [
+  { code: "INR", label: "INR (₹)" },
   { code: "USD", label: "USD ($)" },
   { code: "EUR", label: "EUR (€)" },
   { code: "GBP", label: "GBP (£)" },
-  { code: "INR", label: "INR (₹)" },
   { code: "CAD", label: "CAD" },
   { code: "AUD", label: "AUD" },
   { code: "CHF", label: "CHF" },
   { code: "SGD", label: "SGD" },
 ];
+
+const DEFAULT_SALARY_CURRENCY = "INR";
 
 const type = {
   flowTitle: {
@@ -310,6 +290,8 @@ const fieldSx = {
 const positionSelectFieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: "12px",
+    minHeight: 40,
+    fontSize: "0.875rem",
     "& .MuiOutlinedInput-notchedOutline": {
       borderStyle: "solid",
       borderWidth: 1,
@@ -326,17 +308,36 @@ const positionSelectFieldSx = {
       borderColor: "error.main",
     },
   },
+  "& .MuiOutlinedInput-input": {
+    py: "9px",
+    px: "14px",
+    fontSize: "0.875rem",
+    fontWeight: 500,
+  },
+  "& .MuiSelect-select": {
+    py: "9px",
+    px: "14px",
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    display: "flex",
+    alignItems: "center",
+  },
   "& .MuiInputLabel-root": {
-    fontSize: "1rem",
+    fontSize: "0.8125rem",
     fontWeight: 600,
+  },
+  "& .MuiFormHelperText-root": {
+    fontSize: "0.6875rem",
+    mt: 0.35,
   },
 };
 
 /** Tracks open menu so the outline stays notched while the list is open (focus may move to the popover). */
 const POSITION_SELECT_MENU_INITIAL = {
   department: false,
-  domain: false,
   skillsPick: false,
+  minEducation: false,
+  employmentType: false,
 };
 
 /**
@@ -447,10 +448,10 @@ const SCRATCH_EXPANDED_DEFAULT = {
 };
 
 const scratchAccordionSx = {
-  borderRadius: "16px",
-  border: "1px solid rgba(220, 212, 202, 0.38)",
+  borderRadius: "14px",
+  border: "1px solid rgba(220, 212, 202, 0.5)",
   bgcolor: "#fff",
-  boxShadow: "0 1px 0 rgba(255,255,255,0.95) inset, 0 10px 36px rgba(18, 10, 4, 0.05)",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.98) inset, 0 4px 22px rgba(18, 10, 4, 0.045)",
   "&:before": { display: "none" },
   overflow: "hidden",
   "&.Mui-disabled": {
@@ -459,41 +460,42 @@ const scratchAccordionSx = {
 };
 
 const scratchAccordionSummarySx = {
-  px: { xs: 1.5, md: 2 },
-  py: 1,
-  minHeight: 44,
-  "& .MuiAccordionSummary-content": { margin: "8px 0", alignItems: "center" },
+  px: { xs: 1.5, md: 1.75 },
+  py: 0.875,
+  minHeight: 48,
+  "& .MuiAccordionSummary-content": { margin: "6px 0", alignItems: "center" },
   "& .MuiAccordionSummary-expandIconWrapper .MuiSvgIcon-root": { fontSize: 20 },
 };
 
 const scratchAccordionDetailsSx = {
-  px: { xs: 1.5, md: 2 },
-  pb: { xs: 1.5, md: 2 },
+  px: { xs: 1.75, md: 2.25 },
+  pb: { xs: 1.85, md: 2.15 },
   pt: 0,
 };
 
 /** Scratch Position / Offer accordions: grouped panels read faster than one flat stack. */
 const scratchGroupedMicroHeadingSx = {
-  fontSize: "0.7rem",
-  fontWeight: 800,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
+  fontSize: "0.8125rem",
+  fontWeight: 700,
+  letterSpacing: "-0.01em",
+  textTransform: "none",
   color: SHELL_INK,
-  opacity: 0.72,
-  mb: { xs: 2.5, sm: 3 },
-  pl: 1.35,
-  borderLeft: "2px solid rgba(248, 114, 58, 0.38)",
+  mb: 1.65,
+  pl: 0,
+  borderLeft: "none",
   lineHeight: 1.35,
 };
 
 const scratchGroupedPanelSx = {
-  borderRadius: "14px",
-  border: "1px solid rgba(215, 206, 196, 0.46)",
-  bgcolor: "rgba(255, 253, 249, 0.92)",
-  px: { xs: 1.75, sm: 2.25 },
-  pt: { xs: 1.75, sm: 2 },
-  pb: { xs: 1.9, sm: 2.15 },
-  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.55)",
+  borderRadius: "12px",
+  border: "1px solid rgba(248, 114, 58, 0.13)",
+  bgcolor: "rgba(255, 254, 252, 0.98)",
+  backgroundImage:
+    "linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 248, 243, 0.35) 52%, rgba(255, 242, 234, 0.22) 100%)",
+  px: { xs: 1.65, sm: 2 },
+  pt: { xs: 1.5, sm: 1.75 },
+  pb: { xs: 1.65, sm: 1.9 },
+  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 1px 2px rgba(248, 114, 58, 0.025)",
 };
 
 /** Slightly slower enter so the next section opens in a calm, visible motion without closing the current one. */
@@ -505,22 +507,23 @@ const scratchAccordionSlotProps = {
 };
 
 const scratchAccordionIconWrap = {
-  width: 34,
-  height: 34,
-  borderRadius: "9px",
+  width: 32,
+  height: 32,
+  borderRadius: "10px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  bgcolor: "rgba(107, 99, 92, 0.06)",
-  color: "#7a726b",
+  bgcolor: "rgba(248, 114, 58, 0.05)",
+  color: SHELL_PRIMARY,
   flexShrink: 0,
+  border: "1px solid rgba(248, 114, 58, 0.09)",
 };
 
 function ScratchAccordionHeading({ icon: Icon, label, meta }) {
   return (
     <Stack direction="row" alignItems="center" spacing={1.25} sx={{ width: "100%", pr: 0.5 }}>
       <Box sx={scratchAccordionIconWrap}>
-        <Icon sx={{ fontSize: 19 }} />
+        <Icon sx={{ fontSize: 18 }} />
       </Box>
       <Box>
         <Typography component="h2" sx={{ ...type.accordionHeading, mb: 0 }}>
@@ -538,21 +541,21 @@ function ScratchAccordionHeading({ icon: Icon, label, meta }) {
 
 const toggleSx = {
   flexWrap: "wrap",
-  gap: 1.25,
+  gap: 0.75,
   "& .MuiToggleButton-root": {
     textTransform: "none",
     fontWeight: 600,
-    fontSize: "0.9375rem",
+    fontSize: "0.8125rem",
     lineHeight: 1.35,
-    borderRadius: "12px !important",
-    px: 2,
-    py: 1.125,
-    minHeight: 46,
+    borderRadius: "10px !important",
+    px: 1.5,
+    py: 0.65,
+    minHeight: 38,
     border: `1px solid rgba(220, 212, 202, 0.55) !important`,
     color: SHELL_MUTED,
     "&.Mui-selected": {
       color: SHELL_PRIMARY,
-      bgcolor: "rgba(248, 114, 58, 0.1)",
+      bgcolor: "rgba(248, 114, 58, 0.06)",
       borderColor: `${SHELL_PRIMARY} !important`,
     },
   },
@@ -561,10 +564,10 @@ const toggleSx = {
 /** Sliding white pill over a neutral track; thumb position animates between segments. */
 function ScratchExpertiseSlidingControl({ value, onChange, ariaLabel = "Expertise level" }) {
   const idx = Math.max(0, SCRATCH_EXPERTISE_LEVELS.indexOf(value));
-  /** Track uses p:1 + gap:1 (8px); thumb geometry must match segment grid. */
-  const thumbGap = "8px";
-  const thumbPad = "8px";
-  const segW = `calc((100% - 32px) / 3)`;
+  /** Track uses p:0.75 + gap:0.75 (6px); thumb geometry must match segment grid. */
+  const thumbGap = "6px";
+  const thumbPad = "6px";
+  const segW = `calc((100% - 24px) / 3)`;
   const thumbLeft = `calc(${thumbPad} + ${idx} * (${segW} + ${thumbGap}))`;
   return (
     <Stack
@@ -574,22 +577,22 @@ function ScratchExpertiseSlidingControl({ value, onChange, ariaLabel = "Expertis
       sx={{
         position: "relative",
         alignItems: "stretch",
-        gap: 1,
-        p: 1,
+        gap: 0.75,
+        p: 0.75,
         borderRadius: "999px",
-        bgcolor: "rgba(107, 99, 92, 0.09)",
+        bgcolor: "rgba(107, 99, 92, 0.07)",
         width: { xs: "100%", md: "min(100%, 380px)" },
-        minWidth: { xs: "100%", md: 320 },
+        minWidth: { xs: "100%", md: 300 },
         maxWidth: "100%",
-        minHeight: 52,
+        minHeight: 44,
       }}
     >
       <Box
         aria-hidden
         sx={(theme) => ({
           position: "absolute",
-          top: 8,
-          bottom: 8,
+          top: 6,
+          bottom: 6,
           width: segW,
           left: thumbLeft,
           borderRadius: "999px",
@@ -620,9 +623,9 @@ function ScratchExpertiseSlidingControl({ value, onChange, ariaLabel = "Expertis
               zIndex: 1,
               flex: "1 1 0",
               minWidth: { xs: 0, sm: 100 },
-              px: { xs: 1.25, sm: 1.75 },
-              py: 1,
-              minHeight: 44,
+              px: { xs: 1.1, sm: 1.35 },
+              py: 0.65,
+              minHeight: 36,
               borderRadius: "999px !important",
               textTransform: "none",
               fontWeight: 600,
@@ -711,6 +714,16 @@ function extractJobFieldsFromText(raw) {
   else if (/\bcontract\b/i.test(lower)) out.employmentType = "Contract";
   else if (/\bintern(ship)?\b/i.test(lower)) out.employmentType = "Internship";
   else if (/\bfull[- ]time\b/i.test(lower)) out.employmentType = "Full-time";
+
+  if (/\b(INR|₹|LPA|lakhs?|lacs?|crores?|Rs\.?)\b/i.test(text)) {
+    out.salaryCurrency = "INR";
+  } else if (/\$\s*[\d,]|\bUSD\b|\bUS\s*\$/i.test(text)) {
+    out.salaryCurrency = "USD";
+  } else if (/\b(EUR|€)\b/i.test(text)) {
+    out.salaryCurrency = "EUR";
+  } else if (/\b(GBP|£)\b/i.test(text)) {
+    out.salaryCurrency = "GBP";
+  }
 
   return out;
 }
@@ -1229,9 +1242,9 @@ function simulateCareerPageExtraction() {
     department: "Product",
     domain: "B2B SaaS",
     experienceRange: "3\u20135 years",
-    salaryMin: "140k",
-    salaryMax: "180k",
-    salaryCurrency: "USD",
+    salaryMin: "18",
+    salaryMax: "28",
+    salaryCurrency: "INR",
     location: "San Francisco, CA (Hybrid)",
     employmentType: "Full-time",
     workMode: "hybrid",
@@ -1249,7 +1262,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [experienceRange, setExperienceRange] = useState("");
   const [salaryMin, setSalaryMin] = useState("");
   const [salaryMax, setSalaryMax] = useState("");
-  const [salaryCurrency, setSalaryCurrency] = useState("USD");
+  const [salaryCurrency, setSalaryCurrency] = useState(DEFAULT_SALARY_CURRENCY);
+  const [salaryCurrencyMenuOpen, setSalaryCurrencyMenuOpen] = useState(false);
   const [location, setLocation] = useState("");
   const [employmentType, setEmploymentType] = useState("Full-time");
   const [workMode, setWorkMode] = useState("remote");
@@ -1326,8 +1340,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
     position: false,
   });
 
-  const roleValid =
-    jobTitle.trim().length > 0 && department.trim().length > 0 && domain.trim().length > 0;
+  const roleValid = jobTitle.trim().length > 0 && department.trim().length > 0;
 
   const resetScratchForm = () => {
     setJobTitle("");
@@ -1336,7 +1349,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
     setExperienceRange("");
     setSalaryMin("");
     setSalaryMax("");
-    setSalaryCurrency("USD");
+    setSalaryCurrency(DEFAULT_SALARY_CURRENCY);
+    setSalaryCurrencyMenuOpen(false);
     setLocation("");
     setEmploymentType("Full-time");
     setWorkMode("remote");
@@ -1456,7 +1470,6 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
     if (!jobDescription.trim() || jobDescription.trim().length < 24) missing.push("job description");
     if (!jobTitle.trim()) missing.push("job title");
     if (!department.trim()) missing.push("department");
-    if (!domain.trim()) missing.push("domain");
     if (!experienceRange.length) missing.push("experience level");
     if (!salaryMin.trim()) missing.push("salary min");
     if (!salaryMax.trim()) missing.push("salary max");
@@ -1550,6 +1563,12 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
     if (ex.salaryMin) setSalaryMin(ex.salaryMin);
     if (ex.salaryMax) setSalaryMax(ex.salaryMax);
     if (ex.salaryMin || ex.salaryMax) filled.push("salary");
+    if (
+      ex.salaryCurrency &&
+      SALARY_CURRENCY_OPTIONS.some((o) => o.code === ex.salaryCurrency)
+    ) {
+      setSalaryCurrency(ex.salaryCurrency);
+    }
     if (ex.location) {
       setLocation(ex.location);
       filled.push("location");
@@ -1851,7 +1870,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
           </Box>
         ) : null}
 
-        <Stack spacing={1.5} sx={{ width: "100%" }}>
+        <Stack spacing={2} sx={{ width: "100%" }}>
           {/* Description / Import at the top so users can upload first */}
           <Accordion
             expanded={scratchExpanded.description}
@@ -2157,19 +2176,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               <ScratchAccordionHeading
                 icon={WorkOutlineRoundedIcon}
                 label="Position"
-                meta="Title, department, domain, experience, skills, education"
+                meta="Title, department, experience, skills, education"
               />
             </AccordionSummary>
             <AccordionDetails sx={scratchAccordionDetailsSx}>
               <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-                <Stack spacing={{ xs: 2.25, sm: 2.75 }}>
+                <Stack spacing={{ xs: 2.25, sm: 2.5 }}>
                   <Box sx={scratchGroupedPanelSx}>
                     <Typography component="h3" sx={scratchGroupedMicroHeadingSx}>
                       Role basics
                     </Typography>
-                    <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ width: "100%" }}>
-                      <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
+                    <Grid container spacing={{ xs: 2, md: 2.75 }} sx={{ width: "100%" }}>
+                      <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
                         <TextField
+                          size="small"
                           fullWidth
                           label="Job title"
                           placeholder="e.g. Senior Product Designer"
@@ -2180,8 +2200,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                           sx={{ ...fieldSx, ...positionSelectFieldSx }}
                         />
                       </Grid>
-                      <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                        <FormControl fullWidth error={scratchTouched && !department.trim()} sx={positionSelectFieldSx}>
+                      <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
+                        <FormControl fullWidth size="small" error={scratchTouched && !department.trim()} sx={positionSelectFieldSx}>
                           <InputLabel id="scratch-department-label">Department</InputLabel>
                           <ScratchPositionSelect
                             labelId="scratch-department-label"
@@ -2206,39 +2226,13 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                           {scratchTouched && !department.trim() ? <FormHelperText>Required.</FormHelperText> : null}
                         </FormControl>
                       </Grid>
-                      <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                        <FormControl fullWidth error={scratchTouched && !domain.trim()} sx={positionSelectFieldSx}>
-                          <InputLabel id="scratch-domain-label">Domain</InputLabel>
-                          <ScratchPositionSelect
-                            labelId="scratch-domain-label"
-                            label="Domain"
-                            value={domain}
-                            onChange={(e) => setDomain(e.target.value)}
-                            menuOpen={positionSelectMenuOpen.domain}
-                            onMenuOpen={() =>
-                              setPositionSelectMenuOpen((prev) => ({ ...prev, domain: true }))
-                            }
-                            onMenuClose={() =>
-                              setPositionSelectMenuOpen((prev) => ({ ...prev, domain: false }))
-                            }
-                            MenuProps={POSITION_SELECT_MENU_PROPS}
-                          >
-                            {mergeOptionList(DOMAIN_OPTIONS, domain).map((opt) => (
-                              <MenuItem key={opt} value={opt}>
-                                {opt}
-                              </MenuItem>
-                            ))}
-                          </ScratchPositionSelect>
-                          {scratchTouched && !domain.trim() ? <FormHelperText>Required.</FormHelperText> : null}
-                        </FormControl>
-                      </Grid>
                     </Grid>
 
                     <Typography
                       component="h3"
                       sx={{
                         ...scratchGroupedMicroHeadingSx,
-                        mt: { xs: 2.25, sm: 2.75 },
+                        mt: { xs: 2, sm: 2.25 },
                       }}
                     >
                       Experience level
@@ -2252,7 +2246,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                         flexWrap: "wrap",
                         width: "100%",
                         justifyContent: "flex-start",
-                        gap: 1,
+                        gap: 1.25,
                       }}
                       aria-label="Experience range"
                     >
@@ -2275,9 +2269,28 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       {"Skills & expertise"}
                     </Typography>
 
-                    <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ width: "100%" }}>
-                      <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                        <FormControl fullWidth sx={positionSelectFieldSx}>
+                    <Grid
+                      container
+                      spacing={{ xs: 2, md: 2.75 }}
+                      sx={{ width: "100%", alignItems: "center", textAlign: "left" }}
+                    >
+                      <Grid
+                        size={{ xs: 12, md: 4 }}
+                        sx={{
+                          minWidth: 0,
+                          display: "flex",
+                          justifyContent: { xs: "center", md: "flex-start" },
+                        }}
+                      >
+                        <FormControl
+                          fullWidth
+                          size="small"
+                          sx={{
+                            ...positionSelectFieldSx,
+                            width: { xs: "min(100%, 400px)", md: "100%" },
+                            mx: { xs: "auto", md: 0 },
+                          }}
+                        >
                           <InputLabel id="scratch-skill-pick-label">Skill</InputLabel>
                           <ScratchPositionSelect
                             labelId="scratch-skill-pick-label"
@@ -2301,12 +2314,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                           </ScratchPositionSelect>
                         </FormControl>
                       </Grid>
-                      <Grid size={{ xs: 12, md: 8 }} sx={{ minWidth: 0 }}>
+                      <Grid
+                        size={{ xs: 12, md: 8 }}
+                        sx={{
+                          minWidth: 0,
+                          width: "fit-content",
+                          display: "flex",
+                          justifyContent: { xs: "center", md: "center" },
+                        }}
+                      >
                         <Stack
                           direction={{ xs: "column", md: "row" }}
                           spacing={{ xs: 2, md: 2.5 }}
-                          alignItems={{ xs: "stretch", md: "flex-end" }}
-                          sx={{ width: "100%" }}
+                          alignItems={{ xs: "center", md: "flex-end" }}
+                          sx={{ width: { xs: "100%", md: "auto" }, maxWidth: "100%" }}
                         >
                           <Box sx={{ flex: { md: "0 1 auto" }, minWidth: 0, width: { xs: "100%", md: "auto" } }}>
                             <ScratchExpertiseSlidingControl
@@ -2315,49 +2336,65 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                             />
                           </Box>
                           <Box
+                            component="button"
+                            type="button"
+                            disabled={!scratchPendingSkill || scratchSkills.length >= 10}
+                            onClick={addPendingScratchSkill}
                             sx={{
                               flex: { md: "0 0 auto" },
                               alignSelf: { xs: "stretch", md: "flex-end" },
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 1,
+                              minHeight: 44,
+                              height: 44,
+                              width: { xs: "100%", md: "auto" },
+                              px: 2.25,
+                              py: 0,
+                              m: 0,
                               borderRadius: "10px",
+                              font: "inherit",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              textTransform: "none",
+                              cursor: "pointer",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                              border: `1px solid ${SHELL_PRIMARY}`,
+                              color: SHELL_PRIMARY,
+                              bgcolor: "transparent",
+                              transition: "background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease",
+                              "&:hover:not(:disabled)": {
+                                bgcolor: "rgba(248, 114, 58, 0.08)",
+                                borderColor: SHELL_PRIMARY,
+                                color: SHELL_PRIMARY,
+                              },
+                              "&:focus-visible": {
+                                outline: `2px solid ${SHELL_PRIMARY}`,
+                                outlineOffset: 2,
+                              },
+                              "&:disabled": {
+                                cursor: "not-allowed",
+                                color: SHELL_MUTED,
+                                borderColor: "rgba(200, 190, 178, 0.65)",
+                                bgcolor: "rgba(250, 248, 245, 0.95)",
+                              },
+                              "& .MuiSvgIcon-root": {
+                                fontSize: 18,
+                                color: "inherit",
+                              },
                             }}
                           >
-                            <Button
-                              variant="outlined"
-                              size="medium"
-                              startIcon={<AddRoundedIcon sx={{ fontSize: "18px !important" }} />}
-                              onClick={addPendingScratchSkill}
-                              disabled={!scratchPendingSkill || scratchSkills.length >= 10}
-                              sx={{
-                                minHeight: { xs: 44, md: 56 },
-                                height: { xs: 44, md: 56 },
-                                width: { xs: "100%", md: "auto" },
-                                px: 2.25,
-                                borderRadius: "10px",
-                                textTransform: "none",
-                                fontWeight: 600,
-                                fontSize: "0.875rem",
-                                borderColor: "rgba(200,190,178,0.72)",
-                                color: SHELL_MUTED,
-                                "&:hover": {
-                                  borderColor: SHELL_INK,
-                                  color: SHELL_INK,
-                                  bgcolor: "rgba(0,0,0,0.02)",
-                                },
-                                "&.Mui-disabled": {
-                                  borderColor: "rgba(200,190,178,0.52)",
-                                  color: SHELL_MUTED,
-                                },
-                              }}
-                            >
-                              Add skill
-                            </Button>
+                            <AddRoundedIcon aria-hidden />
+                            Add skill
                           </Box>
                         </Stack>
                       </Grid>
                     </Grid>
 
                     {scratchSkills.length > 0 ? (
-                      <Box role="list" aria-label="Skills added for this role" sx={{ display: "flex", flexWrap: "wrap", gap: 0.65, mt: 2, alignItems: "center" }}>
+                      <Box role="list" aria-label="Skills added for this role" sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 1.75, alignItems: "center" }}>
                         {scratchSkills.map((sk) => (
                           <ScratchSkillPill
                             key={sk.name}
@@ -2381,15 +2418,22 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     <Typography component="h3" sx={scratchGroupedMicroHeadingSx}>
                       Minimum education
                     </Typography>
-                    <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ width: "100%" }}>
-                      <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                        <FormControl fullWidth sx={positionSelectFieldSx}>
+                    <Grid container spacing={{ xs: 2, md: 2.75 }} sx={{ width: "100%" }}>
+                      <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
+                        <FormControl fullWidth size="small" sx={positionSelectFieldSx}>
                           <InputLabel id="scratch-education-label">Select level</InputLabel>
-                          <Select
+                          <ScratchPositionSelect
                             labelId="scratch-education-label"
                             label="Select level"
                             value={minEducation}
                             onChange={(e) => setMinEducation(e.target.value)}
+                            menuOpen={positionSelectMenuOpen.minEducation}
+                            onMenuOpen={() =>
+                              setPositionSelectMenuOpen((prev) => ({ ...prev, minEducation: true }))
+                            }
+                            onMenuClose={() =>
+                              setPositionSelectMenuOpen((prev) => ({ ...prev, minEducation: false }))
+                            }
                             MenuProps={POSITION_SELECT_MENU_PROPS}
                           >
                             {EDUCATION_OPTIONS.map((opt) => (
@@ -2397,7 +2441,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                                 {opt}
                               </MenuItem>
                             ))}
-                          </Select>
+                          </ScratchPositionSelect>
                         </FormControl>
                       </Grid>
                     </Grid>
@@ -2431,86 +2475,75 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             </AccordionSummary>
             <AccordionDetails sx={scratchAccordionDetailsSx}>
               <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-                <Stack spacing={{ xs: 2.25, sm: 2.75 }}>
+                <Stack spacing={{ xs: 2.25, sm: 2.5 }}>
                   <Box sx={scratchGroupedPanelSx}>
-                    <Typography component="h3" sx={scratchGroupedMicroHeadingSx}>
+                    <Typography component="h3" sx={{ ...scratchGroupedMicroHeadingSx, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
                       Compensation
                       <Box
                         component="span"
                         sx={{
-                          display: "inline",
-                          ml: 1.25,
-                          fontSize: "0.65rem",
-                          fontWeight: 600,
-                          letterSpacing: "0.04em",
-                          color: SHELL_MUTED,
-                          textTransform: "none",
+                          fontSize: "0.625rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          color: SHELL_PRIMARY,
+                          textTransform: "uppercase",
+                          px: 0.85,
+                          py: 0.25,
+                          borderRadius: "6px",
+                          bgcolor: "rgba(248, 114, 58, 0.06)",
+                          border: "1px solid rgba(248, 114, 58, 0.14)",
                         }}
                       >
-                        · Yearly
+                        Yearly
                       </Box>
                     </Typography>
-                    <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ width: "100%" }}>
-                      <Grid size={{ xs: 12, sm: 2, md: 2 }} sx={{ minWidth: 0 }}>
-                        <FormControl
-                          fullWidth
-                          size="small"
-                          sx={{
-                            "& .MuiInputLabel-root": {
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              color: SHELL_MUTED,
-                              letterSpacing: "0.02em",
-                            },
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "12px",
-                              bgcolor: "#fff",
-                              fontSize: "0.8125rem",
-                              "& fieldset": { borderColor: "rgba(220, 212, 202, 0.65)" },
-                              "&:hover fieldset": { borderColor: "rgba(220, 212, 202, 0.9)" },
-                            },
-                            "& .MuiSelect-select": { py: 1.1, color: SHELL_MUTED, fontWeight: 600 },
-                          }}
-                        >
-                          <InputLabel id="salary-currency-label">Currency</InputLabel>
-                          <Select
-                            labelId="salary-currency-label"
+                    <Grid container spacing={{ xs: 2, md: 2.75 }} sx={{ width: "100%" }}>
+                      <Grid size={{ xs: 12, sm: 4, md: 4 }} sx={{ minWidth: 0 }}>
+                        <FormControl fullWidth size="small" sx={positionSelectFieldSx}>
+                          <InputLabel id="scratch-salary-currency-label">Currency</InputLabel>
+                          <ScratchPositionSelect
+                            labelId="scratch-salary-currency-label"
                             label="Currency"
                             value={salaryCurrency}
                             onChange={(e) => setSalaryCurrency(e.target.value)}
-                            MenuProps={{ PaperProps: { sx: { borderRadius: "12px" } } }}
+                            menuOpen={salaryCurrencyMenuOpen}
+                            onMenuOpen={() => setSalaryCurrencyMenuOpen(true)}
+                            onMenuClose={() => setSalaryCurrencyMenuOpen(false)}
+                            MenuProps={POSITION_SELECT_MENU_PROPS}
                           >
                             {SALARY_CURRENCY_OPTIONS.map((opt) => (
-                              <MenuItem key={opt.code} value={opt.code} sx={{ fontSize: "0.8125rem" }}>
+                              <MenuItem key={opt.code} value={opt.code} sx={{ fontSize: "0.875rem" }}>
                                 {opt.label}
                               </MenuItem>
                             ))}
-                          </Select>
+                          </ScratchPositionSelect>
                         </FormControl>
                       </Grid>
-                      <Grid size={{ xs: 12, sm: 5, md: 5 }} sx={{ minWidth: 0 }}>
+                      <Grid size={{ xs: 12, sm: 4, md: 4 }} sx={{ minWidth: 0 }}>
                         <TextField
+                          size="small"
                           label="Minimum"
-                          placeholder="120k"
+                          placeholder="e.g. 18"
                           value={salaryMin}
                           onChange={(e) => setSalaryMin(e.target.value)}
                           error={scratchTouched && !salaryMin.trim()}
                           helperText={scratchTouched && !salaryMin.trim() ? "Required." : ""}
                           fullWidth
-                          sx={fieldSx}
+                          sx={{ ...fieldSx, ...positionSelectFieldSx }}
                           inputProps={{ "aria-label": "Minimum salary" }}
                         />
                       </Grid>
-                      <Grid size={{ xs: 12, sm: 5, md: 5 }} sx={{ minWidth: 0 }}>
+                      <Grid size={{ xs: 12, sm: 4, md: 4 }} sx={{ minWidth: 0 }}>
                         <TextField
+                          size="small"
                           label="Maximum"
-                          placeholder="160k"
+                          placeholder="e.g. 28"
                           value={salaryMax}
                           onChange={(e) => setSalaryMax(e.target.value)}
                           error={scratchTouched && !salaryMax.trim()}
                           helperText={scratchTouched && !salaryMax.trim() ? "Required." : ""}
                           fullWidth
-                          sx={fieldSx}
+                          sx={{ ...fieldSx, ...positionSelectFieldSx }}
                           inputProps={{ "aria-label": "Maximum salary" }}
                         />
                       </Grid>
@@ -2521,26 +2554,35 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                     <Typography component="h3" sx={scratchGroupedMicroHeadingSx}>
                       Location and employment
                     </Typography>
-                    <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ width: "100%" }}>
+                    <Grid container spacing={{ xs: 2, md: 2.75 }} sx={{ width: "100%" }}>
                       <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
-                        <FormControl fullWidth sx={fieldSx}>
+                        <FormControl fullWidth size="small" sx={positionSelectFieldSx}>
                           <InputLabel id="emp-type-label">Employment type</InputLabel>
-                          <Select
+                          <ScratchPositionSelect
                             labelId="emp-type-label"
                             label="Employment type"
                             value={employmentType}
                             onChange={(e) => setEmploymentType(e.target.value)}
+                            menuOpen={positionSelectMenuOpen.employmentType}
+                            onMenuOpen={() =>
+                              setPositionSelectMenuOpen((prev) => ({ ...prev, employmentType: true }))
+                            }
+                            onMenuClose={() =>
+                              setPositionSelectMenuOpen((prev) => ({ ...prev, employmentType: false }))
+                            }
+                            MenuProps={POSITION_SELECT_MENU_PROPS}
                           >
                             {EMPLOYMENT_OPTIONS.map((o) => (
                               <MenuItem key={o} value={o}>
                                 {o}
                               </MenuItem>
                             ))}
-                          </Select>
+                          </ScratchPositionSelect>
                         </FormControl>
                       </Grid>
                       <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
                         <TextField
+                          size="small"
                           label="Location"
                           placeholder="San Francisco · US, or Remote · EU"
                           value={location}
@@ -2548,7 +2590,7 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                           error={scratchTouched && !location.trim()}
                           helperText={scratchTouched && !location.trim() ? "Required." : ""}
                           fullWidth
-                          sx={fieldSx}
+                          sx={{ ...fieldSx, ...positionSelectFieldSx }}
                         />
                       </Grid>
                     </Grid>
@@ -2969,9 +3011,13 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             from: { opacity: 0, transform: "translateY(14px)" },
             to: { opacity: 1, transform: "translateY(0)" },
           },
-          "@keyframes profHeroIn": {
-            from: { opacity: 0, transform: "translateY(22px) scale(0.985)" },
-            to: { opacity: 1, transform: "translateY(0) scale(1)" },
+          "@keyframes profHeroTitleIn": {
+            from: { transform: "translateY(14px)" },
+            to: { transform: "translateY(0)" },
+          },
+          "@keyframes profHeroLeadIn": {
+            from: { transform: "translateY(10px)" },
+            to: { transform: "translateY(0)" },
           },
           "@keyframes profHeroLine": {
             from: { transform: "scaleX(0)" },
@@ -3069,9 +3115,9 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                 color: SHELL_INK,
                 lineHeight: 1.2,
                 mb: 0.5,
-                opacity: 0,
-                animation: "profHeroIn 0.75s cubic-bezier(0.23, 1, 0.32, 1) 0.12s forwards",
-                "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
+                opacity: 1,
+                animation: "profHeroTitleIn 0.72s cubic-bezier(0.23, 1, 0.32, 1) 0.08s both",
+                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               }}
             >
               Your ideal{" "}
@@ -3089,9 +3135,9 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                 color: SHELL_MUTED,
                 lineHeight: 1.55,
                 fontWeight: 500,
-                opacity: 0,
-                animation: "profHeroIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.22s forwards",
-                "@media (prefers-reduced-motion: reduce)": { opacity: 1, animation: "none" },
+                opacity: 1,
+                animation: "profHeroLeadIn 0.68s cubic-bezier(0.23, 1, 0.32, 1) 0.14s both",
+                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               }}
             >
               Based on the job details you shared, this is who we believe fits this role best. Review the signals and competencies below, then align with your hiring manager so Zappyfind recommends candidates that closely match this profile.
@@ -3300,33 +3346,61 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             ) : null}
 
             {/* ── Competency framing ── */}
-            <Typography
-              component="p"
-              sx={{
-                m: 0,
-                mb: 1.75,
-                fontSize: "0.75rem",
-                lineHeight: 1.55,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              <Box
-                component="span"
+            <Stack spacing={1.25} sx={{ mb: 1.75 }}>
+              <Typography
+                component="h3"
                 sx={{
+                  m: 0,
                   fontSize: "0.8125rem",
+                  lineHeight: 1.5,
+                  letterSpacing: "-0.01em",
                   fontWeight: 700,
                   color: SHELL_INK,
                 }}
               >
                 Competencies we recommend
-              </Box>
-              <Box component="span" sx={{ color: SHELL_MUTED, fontWeight: 500 }} aria-hidden>
-                {" \u00b7 "}
-              </Box>
-              <Box component="span" sx={{ color: SHELL_MUTED, fontWeight: 500 }}>
+              </Typography>
+              <Typography
+                component="p"
+                sx={{
+                  m: 0,
+                  fontSize: "0.75rem",
+                  lineHeight: 1.55,
+                  letterSpacing: "-0.01em",
+                  color: SHELL_MUTED,
+                  fontWeight: 500,
+                }}
+              >
                 {"Adjust levels, remove what doesn\u2019t apply, or add your own."}
+              </Typography>
+              <Box
+                component="aside"
+                aria-label="How competency choices affect candidate matching"
+                sx={{
+                  pl: 1.5,
+                  pr: 1.5,
+                  py: 1.1,
+                  borderRadius: "0 12px 12px 0",
+                  borderLeft: "3px solid rgba(248, 114, 58, 0.5)",
+                  bgcolor: "rgba(248, 114, 58, 0.07)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                }}
+              >
+                <Typography
+                  component="p"
+                  sx={{
+                    m: 0,
+                    fontSize: "0.8125rem",
+                    lineHeight: 1.55,
+                    letterSpacing: "-0.01em",
+                    color: "rgba(36, 31, 26, 0.88)",
+                    fontWeight: 500,
+                  }}
+                >
+                  When you save this job, we use the competency mix you finalize below to rank suggestions. You should see candidates who line up closely with the must-haves and nice-to-haves you set here.
+                </Typography>
               </Box>
-            </Typography>
+            </Stack>
 
             <Grid container spacing={2.5} sx={{ overflow: "visible" }}>
               <Grid size={{ xs: 12, md: 6 }} sx={{ overflow: "visible", minWidth: 0 }}>

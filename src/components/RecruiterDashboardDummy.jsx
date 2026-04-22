@@ -67,6 +67,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
 import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
@@ -1676,7 +1677,8 @@ function CandidateStatusPill({ status, onChange, candidateName }) {
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open ? "true" : "false"}
-        aria-label={`Candidate status: ${current.label}. Click to change.`}
+        title="Click to change pipeline status"
+        aria-label={`Pipeline status: ${current.label}. Click to open the list and pick another status.`}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1686,7 +1688,8 @@ function CandidateStatusPill({ status, onChange, candidateName }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 0.55,
-          height: 24,
+          height: 26,
+          minHeight: 26,
           pl: 0.85,
           pr: 0.55,
           borderRadius: "999px",
@@ -1724,7 +1727,50 @@ function CandidateStatusPill({ status, onChange, candidateName }) {
           }}
         />
         {current.label}
-        <KeyboardArrowDownRoundedIcon sx={{ fontSize: 15, opacity: 0.75 }} />
+        <Box
+          aria-hidden
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            lineHeight: 0,
+            px: "3px",
+            py: "1px",
+            borderRadius: "6px",
+            border: `1px solid ${current.border}`,
+            bgcolor: "rgba(255,255,255,0.42)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+          }}
+        >
+          <KeyboardArrowUpRoundedIcon
+            sx={{
+              fontSize: "12px",
+              width: "12px",
+              height: "12px",
+              display: "block",
+              color: "currentColor",
+              mb: "-5px",
+              opacity: 0.94,
+              filter:
+                "drop-shadow(0.25px 0 0 currentColor) drop-shadow(-0.25px 0 0 currentColor)",
+            }}
+          />
+          <KeyboardArrowDownRoundedIcon
+            sx={{
+              fontSize: "12px",
+              width: "12px",
+              height: "12px",
+              display: "block",
+              color: "currentColor",
+              mt: "-5px",
+              opacity: 0.94,
+              filter:
+                "drop-shadow(0.25px 0 0 currentColor) drop-shadow(-0.25px 0 0 currentColor)",
+            }}
+          />
+        </Box>
       </Box>
       <Menu
         anchorEl={anchorEl}
@@ -5600,6 +5646,15 @@ function CandidateMatchView({ job, onBack }) {
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
+                    setBulkDownloadSelected((prev) => !prev);
+                    setJobActionsMenuAnchor(null);
+                  }}
+                  sx={{ fontSize: "0.875rem", fontWeight: 600 }}
+                >
+                  {bulkDownloadSelected ? "✓ Bulk download candidates" : "Bulk download candidates"}
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
                     setJobActionsMenuAnchor(null);
                   }}
                   sx={{ fontSize: "0.875rem", fontWeight: 600 }}
@@ -6057,34 +6112,6 @@ function CandidateMatchView({ job, onBack }) {
                       </Box>
                     );
                   })}
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => {
-                      setBulkDownloadSelected((prev) => !prev);
-                      setFilterMenuOpen(false);
-                    }}
-                    sx={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.75,
-                      px: 1.2,
-                      py: 0.8,
-                      border: "none",
-                      bgcolor: bulkDownloadSelected ? "rgba(248,114,58,0.08)" : "transparent",
-                      color: SHELL_INK,
-                      fontFamily: "inherit",
-                      fontSize: "0.8125rem",
-                      fontWeight: bulkDownloadSelected ? 600 : 500,
-                      textAlign: "left",
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: bulkDownloadSelected ? "rgba(248,114,58,0.12)" : "rgba(107,99,92,0.06)" },
-                    }}
-                  >
-                    <Box component="span" sx={{ width: 16, color: bulkDownloadSelected ? SHELL_PRIMARY : "transparent", fontWeight: 800 }}>✓</Box>
-                    Bulk download candidates
-                  </Box>
                 </Box>
               )}
             </Box>
