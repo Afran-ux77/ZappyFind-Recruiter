@@ -3931,49 +3931,56 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                           alignItems={{ xs: "stretch", sm: "center" }}
                           justifyContent={{ xs: "flex-end", sm: "flex-start" }}
                         >
-                          <Tooltip
-                            title={lastHmReminderAuditTitle}
-                            placement="top"
-                            arrow
-                            enterDelay={200}
-                            enterNextDelay={200}
-                            enterTouchDelay={0}
-                            disableHoverListener={!lastHmReminder}
-                            disableFocusListener={!lastHmReminder}
-                            disableTouchListener={!lastHmReminder}
-                            slotProps={{
-                              popper: { sx: { zIndex: 9999 } },
-                              tooltip: {
-                                sx: { maxWidth: 320, textAlign: "left", lineHeight: 1.45, fontSize: "0.75rem" },
-                              },
-                            }}
-                          >
-                            <Button
-                              variant="text"
-                              startIcon={<NotificationsActiveOutlinedIcon sx={{ fontSize: "18px !important", color: SHELL_PRIMARY }} />}
-                              onClick={() => setHmReminderDialogOpen(true)}
-                              sx={{
-                                borderRadius: "10px",
-                                textTransform: "none",
-                                fontWeight: 700,
-                                fontSize: "0.8125rem",
-                                px: 1.25,
-                                py: 0.95,
-                                minWidth: 0,
-                                color: SHELL_PRIMARY,
-                                border: "none",
-                                boxShadow: "none",
-                                whiteSpace: { sm: "nowrap" },
-                                "&:hover": {
-                                  bgcolor: "rgba(248, 114, 58, 0.08)",
+                          {(() => {
+                            const openReminderDialog = () => setHmReminderDialogOpen(true);
+                            const remindButton = (
+                              <Button
+                                variant="text"
+                                startIcon={<NotificationsActiveOutlinedIcon sx={{ fontSize: "18px !important", color: SHELL_PRIMARY }} />}
+                                onClick={openReminderDialog}
+                                sx={{
+                                  borderRadius: "10px",
+                                  textTransform: "none",
+                                  fontWeight: 700,
+                                  fontSize: "0.8125rem",
+                                  px: 1.25,
+                                  py: 0.95,
+                                  minWidth: 0,
+                                  color: SHELL_PRIMARY,
                                   border: "none",
                                   boxShadow: "none",
-                                },
-                              }}
-                            >
-                              Send reminder
-                            </Button>
-                          </Tooltip>
+                                  whiteSpace: { sm: "nowrap" },
+                                  "&:hover": {
+                                    bgcolor: "rgba(248, 114, 58, 0.08)",
+                                    border: "none",
+                                    boxShadow: "none",
+                                  },
+                                }}
+                              >
+                                Send reminder
+                              </Button>
+                            );
+                            return lastHmReminder ? (
+                              <Tooltip
+                                title={lastHmReminderAuditTitle}
+                                placement="top"
+                                arrow
+                                enterDelay={200}
+                                enterNextDelay={200}
+                                enterTouchDelay={0}
+                                slotProps={{
+                                  popper: { sx: { zIndex: 9999 } },
+                                  tooltip: {
+                                    sx: { maxWidth: 320, textAlign: "left", lineHeight: 1.45, fontSize: "0.75rem" },
+                                  },
+                                }}
+                              >
+                                {remindButton}
+                              </Tooltip>
+                            ) : (
+                              remindButton
+                            );
+                          })()}
                           <Button
                             variant="outlined"
                             startIcon={<ManageAccountsOutlinedIcon sx={{ fontSize: "18px !important", color: SHELL_PRIMARY }} />}
@@ -5042,10 +5049,8 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
               >
                 Cancel
               </Button>
-              <Button
-                variant="contained"
-                disableElevation
-                onClick={() => {
+              {(() => {
+                const onConfirmSendReminder = () => {
                   setLastHmReminder({ at: Date.now(), byLabel: HM_REMINDER_SENT_BY_LABEL });
                   setHmReminderDialogOpen(false);
                   setSnackbar({
@@ -5055,20 +5060,46 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                         ? `Reminder sent successfully to ${hmEmails[0]}.`
                         : `Reminder sent successfully to ${hmEmails.length} hiring managers.`,
                   });
-                }}
-                sx={{
-                  borderRadius: "10px",
-                  textTransform: "none",
-                  fontWeight: 700,
-                  fontSize: "0.8125rem",
-                  px: 2.25,
-                  py: 0.85,
-                  boxShadow: "0 6px 18px rgba(248,114,58,0.24)",
-                  "&:hover": { boxShadow: "0 8px 22px rgba(248,114,58,0.30)" },
-                }}
-              >
-                {lastHmReminder ? "Send again" : "Send reminder"}
-              </Button>
+                };
+                const primary = (
+                  <Button
+                    variant="contained"
+                    disableElevation
+                    onClick={onConfirmSendReminder}
+                    sx={{
+                      borderRadius: "10px",
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "0.8125rem",
+                      px: 2.25,
+                      py: 0.85,
+                      boxShadow: "0 6px 18px rgba(248,114,58,0.24)",
+                      "&:hover": { boxShadow: "0 8px 22px rgba(248,114,58,0.30)" },
+                    }}
+                  >
+                    {lastHmReminder ? "Send again" : "Send reminder"}
+                  </Button>
+                );
+                return lastHmReminder ? (
+                  <Tooltip
+                    title={lastHmReminderAuditTitle}
+                    placement="top"
+                    arrow
+                    enterDelay={200}
+                    enterTouchDelay={0}
+                    slotProps={{
+                      popper: { sx: { zIndex: 23000 } },
+                      tooltip: {
+                        sx: { maxWidth: 320, textAlign: "left", lineHeight: 1.45, fontSize: "0.75rem" },
+                      },
+                    }}
+                  >
+                    {primary}
+                  </Tooltip>
+                ) : (
+                  primary
+                );
+              })()}
             </DialogActions>
           </Dialog>
         </Box>
