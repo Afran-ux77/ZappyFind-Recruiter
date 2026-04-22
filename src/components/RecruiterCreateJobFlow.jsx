@@ -1322,6 +1322,9 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
   const [sendHmDialogOpen, setSendHmDialogOpen] = useState(false);
   /** True while send dialog exit runs so skip paper stays recessed until unstack can animate smoothly */
   const [sendHmLeavingStacked, setSendHmLeavingStacked] = useState(false);
+  const [hmInviteCommentDraft, setHmInviteCommentDraft] = useState("");
+  const [hmInviteMessageOpen, setHmInviteMessageOpen] = useState(false);
+  const hmInviteMessageInputRef = useRef(null);
 
   const skipHmRecessedBehindSend = skipHmDialogOpen && (sendHmDialogOpen || sendHmLeavingStacked);
 
@@ -1345,6 +1348,20 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
       setSendHmLeavingStacked(false);
     }
   }, [skipHmDialogOpen]);
+
+  useEffect(() => {
+    if (!sendHmDialogOpen) {
+      setHmInviteMessageOpen(false);
+    }
+  }, [sendHmDialogOpen]);
+
+  useEffect(() => {
+    if (!sendHmDialogOpen || !hmInviteMessageOpen) return undefined;
+    const id = window.setTimeout(() => {
+      hmInviteMessageInputRef.current?.focus?.();
+    }, 320);
+    return () => window.clearTimeout(id);
+  }, [sendHmDialogOpen, hmInviteMessageOpen]);
 
   const [hmEmails, setHmEmails] = useState([]);
   const [hmEmailInput, setHmEmailInput] = useState("");
@@ -4128,6 +4145,227 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
             </Box>
           </Box>
 
+          <Box
+            sx={{
+              mt: 2,
+              borderRadius: "16px",
+              border: "1px solid rgba(220,212,202,0.5)",
+              bgcolor: "rgba(255,255,255,0.92)",
+              p: { xs: 1.75, sm: 2.25 },
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              justifyContent="space-between"
+              spacing={1.25}
+              sx={{ mb: jobProfileComments.length > 0 ? 1.5 : 1.25 }}
+            >
+              <Stack direction="row" alignItems="center" spacing={1.25}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "11px",
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: "rgba(248,114,58,0.1)",
+                    border: "1px solid rgba(248,114,58,0.26)",
+                    flexShrink: 0,
+                  }}
+                >
+                  <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 18, color: SHELL_PRIMARY }} aria-hidden />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: "0.95rem", fontWeight: 800, color: SHELL_INK, letterSpacing: "-0.02em", lineHeight: 1.25 }}>
+                    Comments
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.7rem", color: SHELL_MUTED, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", mt: 0.2 }}>
+                    {jobProfileComments.length === 0
+                      ? "No notes yet"
+                      : `${jobProfileComments.length} ${jobProfileComments.length === 1 ? "note" : "notes"} from your team`}
+                  </Typography>
+                </Box>
+              </Stack>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddOutlinedIcon sx={{ fontSize: "15px !important" }} />}
+                onClick={() => {
+                  setJobCommentComposerOpen((o) => {
+                    if (o) setJobManualCommentDraft("");
+                    return !o;
+                  });
+                }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.8125rem",
+                  borderRadius: "10px",
+                  px: 1.75,
+                  minHeight: 34,
+                  height: 34,
+                  color: SHELL_PRIMARY,
+                  borderColor: `${SHELL_PRIMARY}44`,
+                  alignSelf: { xs: "stretch", sm: "center" },
+                  "&:hover": { borderColor: SHELL_PRIMARY, bgcolor: "rgba(248,114,58,0.045)" },
+                }}
+              >
+                Add comment
+              </Button>
+            </Stack>
+
+            {jobCommentComposerOpen ? (
+              <Box sx={{ mb: jobProfileComments.length > 0 ? 1.5 : 0 }}>
+                <TextField
+                  multiline
+                  minRows={2}
+                  maxRows={6}
+                  fullWidth
+                  size="small"
+                  placeholder="Add a note for your team on this job."
+                  value={jobManualCommentDraft}
+                  onChange={(e) => setJobManualCommentDraft(e.target.value)}
+                  inputProps={{ maxLength: 2000 }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px", fontSize: "0.875rem" } }}
+                />
+                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 1 }}>
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => {
+                      setJobCommentComposerOpen(false);
+                      setJobManualCommentDraft("");
+                    }}
+                    sx={{ textTransform: "none", fontWeight: 600, color: SHELL_MUTED }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    disableElevation
+                    disabled={!jobManualCommentDraft.trim()}
+                    onClick={() => {
+                      const t = jobManualCommentDraft.trim();
+                      if (!t) return;
+                      setJobProfileComments((prev) => [
+                        {
+                          id: `job-note-${Date.now()}`,
+                          text: t,
+                          authorName: PROFILE_SKILL_MARKED_BY,
+                          authorRole: "Recruiter",
+                          authorInitial: PROFILE_SKILL_MARKED_BY.charAt(0).toUpperCase(),
+                          createdAt: Date.now(),
+                        },
+                        ...prev,
+                      ]);
+                      setJobManualCommentDraft("");
+                      setJobCommentComposerOpen(false);
+                    }}
+                    sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
+                  >
+                    Post
+                  </Button>
+                </Stack>
+              </Box>
+            ) : null}
+
+            {jobProfileComments.length === 0 && !jobCommentComposerOpen ? (
+              <Box
+                sx={{
+                  py: 2.25,
+                  px: 2,
+                  textAlign: "center",
+                  borderRadius: "12px",
+                  bgcolor: "rgba(248,246,243,0.6)",
+                  border: "1px dashed rgba(220,212,202,0.7)",
+                }}
+              >
+                <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK }}>
+                  No comments yet
+                </Typography>
+                <Typography sx={{ fontSize: "0.75rem", color: SHELL_MUTED, mt: 0.35, lineHeight: 1.5 }}>
+                  Add the first note so your team can follow along, or include a message when you email the hiring manager.
+                </Typography>
+              </Box>
+            ) : jobProfileComments.length === 0 ? null : (
+              <Stack spacing={1}>
+                {jobProfileComments.map((c) => (
+                  <Box
+                    key={c.id}
+                    sx={{
+                      borderRadius: "12px",
+                      border: "1px solid rgba(220,212,202,0.5)",
+                      bgcolor: "#fff",
+                      p: 1.5,
+                      transition: "border-color 0.18s ease, box-shadow 0.18s ease",
+                      "&:hover": { borderColor: "rgba(220,212,202,0.85)", boxShadow: "0 4px 14px rgba(18,10,4,0.04)" },
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          flexShrink: 0,
+                          borderRadius: "50%",
+                          bgcolor: "rgba(248,114,58,0.14)",
+                          color: "#B8481A",
+                          display: "grid",
+                          placeItems: "center",
+                          fontWeight: 800,
+                          fontSize: "0.8125rem",
+                          letterSpacing: "-0.01em",
+                        }}
+                        aria-hidden
+                      >
+                        {c.authorInitial || (c.authorName ? c.authorName.charAt(0).toUpperCase() : "?")}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack direction="row" alignItems="baseline" spacing={0.75} flexWrap="wrap" rowGap={0.2}>
+                          <Typography sx={{ fontSize: "0.8125rem", fontWeight: 700, color: SHELL_INK, lineHeight: 1.3 }}>
+                            {c.authorName}
+                          </Typography>
+                          {c.authorRole ? (
+                            <Typography sx={{ fontSize: "0.72rem", color: SHELL_MUTED, fontWeight: 600, lineHeight: 1.3 }}>
+                              · {c.authorRole}
+                            </Typography>
+                          ) : null}
+                          <Tooltip title={formatJobCommentAbsoluteTime(c.createdAt)} arrow placement="top">
+                            <Typography
+                              sx={{
+                                fontSize: "0.72rem",
+                                color: SHELL_MUTED,
+                                fontWeight: 600,
+                                lineHeight: 1.3,
+                                cursor: "default",
+                              }}
+                            >
+                              · {formatJobCommentRelativeTime(c.createdAt)}
+                            </Typography>
+                          </Tooltip>
+                        </Stack>
+                        <Typography
+                          sx={{
+                            fontSize: "0.875rem",
+                            color: "rgba(23,18,14,0.88)",
+                            lineHeight: 1.55,
+                            mt: 0.45,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {c.text}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
+
           {/* Next step */}
           <Stack
             direction={{ xs: "column-reverse", sm: "row" }}
@@ -4859,6 +5097,75 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                 </Box>
                 </Stack>
 
+                <Box sx={{ mt: 2.5 }}>
+                  <Button
+                    type="button"
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => setHmInviteMessageOpen((o) => !o)}
+                    aria-expanded={hmInviteMessageOpen}
+                    aria-controls="hm-invite-message-panel"
+                    endIcon={
+                      <ExpandMoreRoundedIcon
+                        sx={{
+                          fontSize: 22,
+                          color: SHELL_MUTED,
+                          transition: "transform 0.22s ease",
+                          transform: hmInviteMessageOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      justifyContent: "space-between",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontSize: "0.8125rem",
+                      letterSpacing: "-0.01em",
+                      color: SHELL_INK,
+                      borderRadius: "12px",
+                      py: 1.1,
+                      px: 1.5,
+                      borderColor: "rgba(220,212,202,0.75)",
+                      bgcolor: "#fff",
+                      "&:hover": { borderColor: "rgba(248,114,58,0.45)", bgcolor: "rgba(248,114,58,0.03)" },
+                    }}
+                  >
+                    Optional message for hiring manager
+                  </Button>
+                  <Collapse in={hmInviteMessageOpen} timeout={260}>
+                    <Box id="hm-invite-message-panel" sx={{ pt: 1.5 }}>
+                      <TextField
+                        multiline
+                        minRows={3}
+                        maxRows={8}
+                        fullWidth
+                        size="small"
+                        placeholder="Context, deadlines, or what you want them to focus on when they review the profile."
+                        value={hmInviteCommentDraft}
+                        onChange={(e) => setHmInviteCommentDraft(e.target.value)}
+                        inputRef={hmInviteMessageInputRef}
+                        inputProps={{ maxLength: 2000, "aria-label": "Optional message for hiring manager" }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            alignItems: "flex-start",
+                            fontSize: "14px",
+                          },
+                          "& .MuiOutlinedInput-input": {
+                            fontSize: "14px",
+                            lineHeight: 1.5,
+                            paddingTop: "12px",
+                            paddingBottom: "12px",
+                            paddingLeft: "14px",
+                            paddingRight: "14px",
+                            resize: "vertical",
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Collapse>
+                </Box>
+
                 {/* Actions */}
                 <Stack direction="row" spacing={1.25} justifyContent="flex-end" sx={{ mt: 4 }}>
                   <Button
@@ -4892,6 +5199,23 @@ export default function RecruiterCreateJobFlow({ onBack, onExit }) {
                       if (finalEmails.length === 0) return;
                       const wasSent = hmSent;
                       if (wasSent) setLastHmReminder(null);
+                      const inviteNote = hmInviteCommentDraft.trim();
+                      if (inviteNote) {
+                        const inviteLabel = wasSent ? "Updated hiring manager invite" : "Hiring manager invite";
+                        setJobProfileComments((prev) => [
+                          {
+                            id: `hm-invite-${Date.now()}`,
+                            text: `${inviteLabel} (${finalEmails.join(", ")})\n\n${inviteNote}`,
+                            authorName: PROFILE_SKILL_MARKED_BY,
+                            authorRole: "Recruiter",
+                            authorInitial: PROFILE_SKILL_MARKED_BY.charAt(0).toUpperCase(),
+                            createdAt: Date.now(),
+                          },
+                          ...prev,
+                        ]);
+                      }
+                      setHmInviteCommentDraft("");
+                      setHmInviteMessageOpen(false);
                       setHmEmails(finalEmails);
                       setHmEmailInput("");
                       setHmEmailError("");
